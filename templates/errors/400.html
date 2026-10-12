@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0e1016">
+  <title>400 | Learn2Play</title>
+
+  <link rel="stylesheet"
+        href="{{ url_for('static', filename='css/styles.css') }}">
+
+  <style>
+    :root {
+      --bg: #0e1016;
+      --panel: #14161f;
+      --card: #1b1d29;
+      --line: #262a3a;
+      --purple: #7c6cf5;
+      --purple2: #6656ee;
+      --green: #4ade80;
+      --txt: #eef0f6;
+      --txt2: #a2a7bb;
+      --txt3: #6f7488;
+      --danger: #f87171;
+      --lavender: #a99dff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      padding: 24px;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(ellipse at top left, rgba(124, 108, 245, 0.14), transparent 42%),
+        var(--bg);
+      color: var(--txt);
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+
+    .error-card {
+      width: min(100%, 640px);
+      padding: clamp(28px, 7vw, 56px);
+      text-align: center;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.3);
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 48px;
+      color: var(--txt);
+      text-decoration: none;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .logo {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #8b7dff, #6d5bf0);
+      color: #fff;
+      font-size: 14px;
+    }
+
+    .error-icon {
+      width: 76px;
+      height: 76px;
+      margin: 0 auto 24px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(124, 108, 245, 0.35);
+      border-radius: 22px;
+      background: rgba(124, 108, 245, 0.12);
+      color: var(--lavender);
+      font-size: 32px;
+      font-weight: 700;
+    }
+
+    .error-code {
+      margin-bottom: 10px;
+      color: var(--purple);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+    }
+
+    h1 {
+      color: var(--txt);
+      font-size: clamp(26px, 6vw, 38px);
+      line-height: 1.15;
+      font-weight: 650;
+    }
+
+    .message {
+      max-width: 430px;
+      margin: 14px auto 28px;
+      color: var(--txt2);
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .button {
+      min-width: 160px;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      padding: 12px 18px;
+      border: 1px solid var(--purple);
+      border-radius: 10px;
+      background: var(--purple);
+      color: #fff;
+      text-decoration: none;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      transition: background 0.18s, transform 0.18s;
+    }
+
+    .button:hover {
+      background: var(--purple2);
+      transform: translateY(-1px);
+    }
+
+    .button.secondary {
+      border-color: var(--line);
+      background: var(--card);
+      color: var(--txt2);
+    }
+
+    .button.secondary:hover {
+      border-color: var(--purple);
+      color: var(--txt);
+    }
+
+    .help-note {
+      margin-top: 28px;
+      color: var(--txt3);
+      font-size: 12px;
+    }
+
+    .help-note a {
+      color: var(--lavender);
+      text-decoration: none;
+    }
+
+    .help-note a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 480px) {
+      .brand {
+        margin-bottom: 36px;
+      }
+
+      .actions {
+        flex-direction: column;
+      }
+
+      .button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="error-card">
+    <a class="brand" href="/">
+      <span class="logo" aria-hidden="true">L2</span>
+      <span>Learn2Play</span>
+    </a>
+
+    <div class="error-icon" aria-hidden="true">!</div>
+    <p class="error-code">ERROR 400</p>
+    <h1>Bad request</h1>
+    <p class="message">{{ The request couldn’t be understood. Please check what you sent and try again. }}</p>
+
+    <div class="actions">
+      <a class="button" href="{{ url_for('main.home') }}">Go back</a>
+      <a class="button secondary" href="{{ url_for('main.dashboard') }}">Go to dashboard</a>
+    </div>
+
+    <p class="help-note">
+      Need help?
+      <a href="/help">Visit the help page</a>
+    </p>
+  </main>
+</body>
+</html>
