@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Learn2Play — Dashboard</title>
-  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body class="dashboard">
 
@@ -48,10 +48,10 @@
       <div class="dd-roles" id="menuRoles"></div>
     </div>
 
-    <a class="dd-item" role="menuitem" href="profile.html">View profile</a>
-    <a class="dd-item" role="menuitem" href="sessions.html">My sessions</a>
-    <a class="dd-item" role="menuitem" href="settings.html">Settings</a>
-    <a class="dd-item" role="menuitem" href="help.html">Help &amp; support</a>
+    <a class="dd-item" role="menuitem" href="{{ url_for('main.profile') }}">View profile</a>
+<a class="dd-item" role="menuitem" href="{{ url_for('main.sessions') }}">My sessions</a>
+<a class="dd-item" role="menuitem" href="{{ url_for('main.settings') }}">Settings</a>
+<a class="dd-item" role="menuitem" href="{{ url_for('main.help') }}">Help &amp; support</a>
 
     <div class="dd-sep"></div>
     <a class="dd-item danger" role="menuitem" href="auth.html" id="logoutBtn">Log out</a>
@@ -104,6 +104,6 @@
     </main>
   </div>
 
-  <script src="../js/script.js" defer></script>
+  <script src="{{ url_for('static', filename='js/script.js') }}" defer></script>
 </body>
 </html>
