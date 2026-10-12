@@ -281,6 +281,14 @@ window.L2 = { user, getMode: () => activeMode, setMode };
     );
   }
 
+  const editBtn = document.getElementById("editProfileBtn");
+
+if(editBtn){
+    editBtn.addEventListener("click", () => {
+        alert("Edit Profile feature coming soon.");
+    });
+}
+
   /* ---------- card template ---------- */
   function initialsOf(name) {
     return name.split(/\s+/).filter(Boolean).map((w) => w.charAt(0)).join("").slice(0, 2).toUpperCase();
