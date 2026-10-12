@@ -5,9 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Learn2Play — Log in</title>
   <link rel="stylesheet" href="css/styles.css">
-<base target="_blank">
 </head>
 <body>
+  <!-- Reusable star icon (defined once, used 10x below) -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="star" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></symbol>
+  </svg>
+
   <main class="login">
 
     <!-- ============ Brand / hero panel ============ -->
@@ -34,8 +38,8 @@
       </div>
 
       <div class="brand-mid">
-        <h2>Every legend<br>needs a <em>coach</em>.</h2>
-        <p>Book top-rated academic tutors and pro gaming coaches for live 1-on-1 sessions.</p>
+        <h2 id="heroTitle">Every legend<br>needs a <em>coach</em>.</h2>
+        <p id="heroText">Book top-rated academic tutors and pro gaming coaches for live 1-on-1 sessions.</p>
 
         <div class="mini-cards">
           <div class="mini">
@@ -45,7 +49,11 @@
               <div class="mini-sub">Mathematics &amp; Calculus</div>
               <div class="stars-row">
                 <span class="stars">
-                  <svg class="star" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg><svg class="star" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg><svg class="star" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg><svg class="star" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg><svg class="star" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+                  <svg class="star" viewBox="0 0 24 24"><use href="#star"/></svg>
+                  <svg class="star" viewBox="0 0 24 24"><use href="#star"/></svg>
+                  <svg class="star" viewBox="0 0 24 24"><use href="#star"/></svg>
+                  <svg class="star" viewBox="0 0 24 24"><use href="#star"/></svg>
+                  <svg class="star" viewBox="0 0 24 24"><use href="#star"/></svg>
                 </span>
                 <span class="rating">4.9</span><span class="reviews">(143)</span>
               </div>
@@ -60,7 +68,11 @@
               <div class="mini-sub">Valorant &amp; FPS Strategy</div>
               <div class="stars-row">
                 <span class="stars">
-                  <svg class="star" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg><svg class="star" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg><svg class="star" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg><svg class="star" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg><svg class="star" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+                  <svg class="star" viewBox="0 0 24 24"><use href="#star"/></svg>
+                  <svg class="star" viewBox="0 0 24 24"><use href="#star"/></svg>
+                  <svg class="star" viewBox="0 0 24 24"><use href="#star"/></svg>
+                  <svg class="star" viewBox="0 0 24 24"><use href="#star"/></svg>
+                  <svg class="star" viewBox="0 0 24 24"><use href="#star"/></svg>
                 </span>
                 <span class="rating">4.8</span><span class="reviews">(211)</span>
               </div>
@@ -71,52 +83,82 @@
       </div>
     </aside>
 
-    <!-- ============ Form panel ============ -->
+    <!-- ============ Form panel (login + sign up) ============ -->
     <section class="form-wrap">
       <h1 id="title">Welcome back</h1>
       <p class="sub" id="subtitle">Log in to pick up where you left off.</p>
 
-      <div class="tabs" role="tablist">
-        <button class="tab active" id="tabLogin" role="tab" aria-selected="true">Log in</button>
-        <button class="tab" id="tabSignup" role="tab" aria-selected="false">Sign up</button>
+      <div class="tabs" role="tablist" aria-label="Account options">
+        <button class="tab active" id="tabLogin" type="button" role="tab" aria-selected="true">Log in</button>
+        <button class="tab" id="tabSignup" type="button" role="tab" aria-selected="false">Sign up</button>
       </div>
 
       <form id="form" novalidate>
-        <label class="field hidden" id="nameField">
+        <!-- Sign up only -->
+        <label class="field hidden" id="nameField" for="name">
           <span>Display name</span>
           <div class="input-wrap">
             <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>
-            <input type="text" id="name" placeholder="e.g. kai_plays" autocomplete="username">
+            <input type="text" id="name" name="name" placeholder="e.g. kai_plays" autocomplete="username">
           </div>
         </label>
 
-        <label class="field">
+        <label class="field" for="email">
           <span>Email</span>
           <div class="input-wrap">
             <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M4 7.5l8 6 8-6"/></svg>
-            <input type="email" id="email" placeholder="you@example.com" autocomplete="email">
+            <input type="email" id="email" name="email" placeholder="you@example.com" autocomplete="email">
           </div>
         </label>
 
-        <label class="field">
+        <label class="field" for="password">
           <span>Password</span>
           <div class="input-wrap">
             <svg class="icon" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="10" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
-            <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
-            <button type="button" class="eye" id="eyeBtn" aria-label="Toggle password visibility">
+            <input type="password" id="password" name="password" placeholder="••••••••" autocomplete="current-password">
+            <button type="button" class="eye" id="eyeBtn" aria-label="Show password">
               <svg id="eyeOpen" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>
               <svg id="eyeClosed" viewBox="0 0 24 24" class="hidden-svg"><path d="M4 4l16 16"/><path d="M10.6 6c.5-.1.9-.1 1.4-.1 6 0 9.5 6.1 9.5 6.1a17 17 0 0 1-2.7 3.4M6.6 6.9A16.6 16.6 0 0 0 2.5 12S6 18.1 12 18.1c1.3 0 2.5-.3 3.6-.7"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
             </button>
           </div>
         </label>
 
-        <div class="row-between">
+        <!-- Sign up only -->
+        <label class="field hidden" id="confirmField" for="confirmPassword">
+          <span>Confirm password</span>
+          <div class="input-wrap">
+            <svg class="icon" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="10" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+            <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Enter your password again" autocomplete="new-password">
+          </div>
+        </label>
+
+        <!-- Sign up only: pick one or more roles -->
+        <fieldset class="field roles hidden" id="rolesField">
+          <legend>I want to join as <small>(pick one or more)</small></legend>
+          <div class="role-options">
+            <label class="role">
+              <input type="checkbox" name="roles" value="student">
+              <span class="role-card"><b>Student</b><small>Learn from tutors &amp; coaches</small></span>
+            </label>
+            <label class="role">
+              <input type="checkbox" name="roles" value="mentor">
+              <span class="role-card"><b>Mentor</b><small>Teach academic subjects</small></span>
+            </label>
+            <label class="role">
+              <input type="checkbox" name="roles" value="coach">
+              <span class="role-card"><b>Coach</b><small>Coach gaming skills</small></span>
+            </label>
+          </div>
+        </fieldset>
+
+        <!-- Log in only -->
+        <div class="row-between" id="rememberRow">
           <label class="remember">
             <input type="checkbox" id="remember" checked>
             <span class="box"><svg viewBox="0 0 24 24"><path d="M4.5 12.5l5 5 10-11"/></svg></span>
             Remember me
           </label>
-          <a class="link" id="forgot">Forgot password?</a>
+          <a class="link" id="forgot" href="#">Forgot password?</a>
         </div>
 
         <button class="primary" id="submit" type="submit"><span id="btnLabel">Log in</span></button>
@@ -124,15 +166,16 @@
 
       <div class="divider"><span>or continue with</span></div>
       <div class="socials">
-        <button class="social"><span class="mark m-g">G</span>Google</button>
-        <button class="social"><span class="mark m-d">D</span>Discord</button>
-        <button class="social"><span class="mark m-a"></span>Apple</button>
+        <button class="social" type="button"><span class="mark m-g">G</span>Google</button>
+        <button class="social" type="button"><span class="mark m-d">D</span>Discord</button>
+        <button class="social" type="button"><span class="mark m-a"></span>Apple</button>
       </div>
-      <p class="switch" id="switchLine">New to Learn2Play? <a id="switchLink">Get started</a></p>
-      <p class="form-note" id="note"></p>
+
+      <p class="switch" id="switchLine">New to Learn2Play? <a href="#signup" id="switchLink">Get started</a></p>
+      <p class="form-note" id="note" role="status" aria-live="polite"></p>
     </section>
 
   </main>
-  <script src="/js/script.js" defer></script>
+  <script src="js/auth.js" defer></script>
 </body>
 </html>

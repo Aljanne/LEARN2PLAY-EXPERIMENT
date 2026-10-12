@@ -3,9 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Learn2Play — Find your coach</title>
+  <title>Learn2Play — Dashboard</title>
   <link rel="stylesheet" href="../css/styles.css">
-<base target="_blank">
 </head>
 <body class="dashboard">
 
@@ -21,46 +20,88 @@
       <input type="text" id="searchInput" placeholder="Search tutors, coaches, subjects…">
     </div>
 
-    <nav class="tb-nav">
-      <a href="dashboard.html" class="active">Home</a>
-      <a href="#" data-nav="academic">Academic Tutors</a>
-      <a href="#" data-nav="gaming">Gaming Coaches</a>
-      <a href="#">My Bookings</a>
-    </nav>
+    <div class="tb-right">
+      <!-- Student-only top links -->
+      <nav class="tb-nav" data-show-for="student">
+        <a href="dashboard.html" class="active">Home</a>
+        <a href="#" data-nav="academic">Academic Tutors</a>
+        <a href="#" data-nav="gaming">Gaming Coaches</a>
+        <a href="sessions.html">My Bookings</a>
+      </nav>
 
-    <div class="tb-avatar">JD</div>
+      <!-- Mode switcher: JS shows it only if the user has 2+ roles -->
+      <div class="mode-switch hidden" id="modeSwitch" role="group" aria-label="Dashboard mode">
+        <button class="mode-btn hidden" type="button" data-mode="student">Learning</button>
+        <button class="mode-btn hidden" type="button" data-mode="mentor">Mentoring</button>
+        <button class="mode-btn hidden" type="button" data-mode="coach">Coaching</button>
+      </div>
+
+      <div class="tb-profile" id="profileMenu">
+  <button class="tb-avatar" id="userAvatar" type="button"
+          aria-haspopup="menu" aria-expanded="false" aria-controls="profileDropdown"
+          aria-label="Open account menu">JD</button>
+
+  <div class="dropdown hidden" id="profileDropdown" role="menu">
+    <div class="dd-header">
+      <div class="dd-name" id="menuName">Juan Dela Cruz</div>
+      <div class="dd-email" id="menuEmail">juan@example.com</div>
+      <div class="dd-roles" id="menuRoles"></div>
+    </div>
+
+    <a class="dd-item" role="menuitem" href="profile.html">View profile</a>
+    <a class="dd-item" role="menuitem" href="sessions.html">My sessions</a>
+    <a class="dd-item" role="menuitem" href="settings.html">Settings</a>
+    <a class="dd-item" role="menuitem" href="help.html">Help &amp; support</a>
+
+    <div class="dd-sep"></div>
+    <a class="dd-item danger" role="menuitem" href="auth.html" id="logoutBtn">Log out</a>
+  </div>
+</div>
+    </div>
   </header>
 
   <div class="layout">
 
     <!-- ============ Sidebar ============ -->
     <aside class="sidebar">
-      <div class="side-label">Browse</div>
-      <button class="side-item active" data-cat="all">All</button>
-      <button class="side-item" data-cat="academic">Academic Tutors</button>
-      <button class="side-item" data-cat="gaming">Gaming Coaches</button>
 
-      <div class="side-label">Subjects</div>
-      <button class="side-item" data-subject="mathematics">Mathematics</button>
-      <button class="side-item" data-subject="chemistry">Chemistry</button>
-      <button class="side-item" data-subject="biology">Biology</button>
-      <button class="side-item" data-subject="english">English</button>
-      <button class="side-item" data-subject="valorant">Valorant</button>
-      <button class="side-item" data-subject="league of legends">League of Legends</button>
-      <button class="side-item" data-subject="apex legends">Apex Legends</button>
+      <!-- Student mode only: category filters (subjects removed) -->
+      <div class="side-group" data-show-for="student">
+        <div class="side-label">Browse</div>
+        <button class="side-item active" data-cat="all">All</button>
+        <button class="side-item" data-cat="academic">Academic Tutors</button>
+        <button class="side-item" data-cat="gaming">Gaming Coaches</button>
+      </div>
+
+      <!-- Every mode: links to the other pages -->
+      <div class="side-label">Menu</div>
+      <a class="side-item active" href="dashboard.html" aria-current="page">Dashboard</a>
+      <a class="side-item" href="sessions.html">Sessions</a>
+      <a class="side-item" href="messages.html">Messages</a>
+      <a class="side-item" href="settings.html">Settings</a>
 
       <div class="side-cta">
         <p>New to Learn2Play? Find your perfect tutor or coach today.</p>
-        <a class="cta-btn" href="login.html">Get Started</a>
+        <a class="cta-btn" href="auth.html#signup">Get Started</a>
       </div>
     </aside>
 
-    <!-- ============ Tutor grid ============ -->
+    <!-- ============ Main content ============ -->
     <main class="content">
-      <div class="grid" id="tutorGrid"></div>
-      <p class="empty hidden" id="emptyState">No tutors match your search — try a different subject or keyword.</p>
-    </main>
 
+      <!-- Student mode: your tutor grid -->
+      <section id="view-find" data-show-for="student">
+        <div class="grid" id="tutorGrid"></div>
+        <p class="empty hidden" id="emptyState">No tutors match your search — try a different subject or keyword.</p>
+      </section>
+
+      <!-- Mentor / Coach mode: placeholder overview -->
+      <section id="view-overview" class="hidden" data-show-for="mentor coach">
+        <h2 class="view-title">Overview</h2>
+        <p class="view-note">Upcoming sessions, new requests and earnings will show up here.</p>
+      </section>
+
+    </main>
   </div>
 
   <script src="../js/script.js" defer></script>
