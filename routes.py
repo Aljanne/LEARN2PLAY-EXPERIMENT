@@ -191,3 +191,31 @@ def get_current_user():
 @login_required
 def dashboard():
     return render_template("dashboard.html")
+
+
+# View profile page
+@main.route("/profile")
+@login_required
+def profile():
+    return render_template("profile.html")
+
+
+# Sessions page
+@main.route("/sessions")
+@login_required
+def sessions():
+    return render_template("sessions.html")
+
+
+# Settings page
+@main.route("/settings")
+@login_required
+def settings():
+    return render_template("settings.html")
+
+
+# Help and support page
+@main.route("/help")
+def help():
+    return render_template("help.html")
+

@@ -120,66 +120,183 @@ applyMode();
 window.L2 = { user, getMode: () => activeMode, setMode };
 
 
+
 /* ============================================================
-   PART 2 — profile dropdown
+   PART 2 — profile dropdown and real logged-in user
    ============================================================ */
 (function () {
-  const menu     = document.getElementById("profileMenu");
-  const avatar   = document.getElementById("userAvatar");
-  const dropdown = document.getElementById("profileDropdown");
-  if (!menu || !avatar || !dropdown) return;
+    const menu = document.getElementById("profileMenu");
+    const avatar = document.getElementById("userAvatar");
+    const dropdown = document.getElementById("profileDropdown");
 
-  function openMenu() {
-    dropdown.classList.remove("hidden");
-    avatar.setAttribute("aria-expanded", "true");
-  }
-  function closeMenu(returnFocus) {
-    dropdown.classList.add("hidden");
-    avatar.setAttribute("aria-expanded", "false");
-    if (returnFocus) avatar.focus();
-  }
+    if (!menu || !avatar || !dropdown) return;
 
-  avatar.addEventListener("click", () => {
-    dropdown.classList.contains("hidden") ? openMenu() : closeMenu(false);
-  });
+    function openMenu() {
+        dropdown.classList.remove("hidden");
+        avatar.setAttribute("aria-expanded", "true");
+    }
 
-  // click outside closes it
-  document.addEventListener("click", (e) => {
-    if (!menu.contains(e.target)) closeMenu(false);
-  });
+    function closeMenu(returnFocus = false) {
+        dropdown.classList.add("hidden");
+        avatar.setAttribute("aria-expanded", "false");
+        if (returnFocus) avatar.focus();
+    }
 
-  // Escape closes it and returns focus to the avatar
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !dropdown.classList.contains("hidden")) closeMenu(true);
-  });
-
-  // fill in the signed-in user's details
-  const initials = user.name.split(/\s+/).filter(Boolean)
-    .map((w) => w.charAt(0)).join("").slice(0, 2).toUpperCase();
-  avatar.textContent = initials;
-
-  const nameEl  = document.getElementById("menuName");
-  const emailEl = document.getElementById("menuEmail");
-  const rolesEl = document.getElementById("menuRoles");
-  if (nameEl)  nameEl.textContent  = user.name;
-  if (emailEl) emailEl.textContent = user.email;
-  if (rolesEl) {
-    // roles were filtered against MODES above, so this is safe to inject
-    rolesEl.innerHTML = user.roles
-      .map((r) => '<span class="pill ' + (r === "coach" ? "g" : "a") + '">' + r + "</span>")
-      .join("");
-  }
-
-  // Log out: the link still navigates to auth.html after this runs.
-  const logout = document.getElementById("logoutBtn");
-  if (logout) {
-    logout.addEventListener("click", () => {
-      // TODO(backend): await fetch("/api/auth/logout", { method: "POST" });
-      store.remove(KEYS.user);
-      store.remove(KEYS.mode);
+    avatar.addEventListener("click", () => {
+        if (dropdown.classList.contains("hidden")) {
+            openMenu();
+        } else {
+            closeMenu();
+        }
     });
-  }
+
+    document.addEventListener("click", (event) => {
+        if (!menu.contains(event.target)) closeMenu();
+    });
+
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" &&
+            !dropdown.classList.contains("hidden")) {
+            closeMenu(true);
+        }
+    });
+
+    function displayUser(account) {
+        const name = account.name || "User";
+        const roles = (account.roles || [])
+            .filter(role => Object.hasOwn(MODES, role));
+
+        const initials = name
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean)
+            .map(part => part[0])
+            .join("")
+            .slice(0, 2)
+            .toUpperCase();
+
+        avatar.textContent = initials || "U";
+
+        const nameEl = document.getElementById("menuName");
+        const emailEl = document.getElementById("menuEmail");
+        const rolesEl = document.getElementById("menuRoles");
+
+        if (nameEl) nameEl.textContent = name;
+        if (emailEl) emailEl.textContent = account.email || "";
+
+        if (rolesEl) {
+            rolesEl.replaceChildren();
+
+            roles.forEach(role => {
+                const pill = document.createElement("span");
+                pill.className =
+                    "pill " + (role === "coach" ? "g" : "a");
+                pill.textContent = role;
+                rolesEl.appendChild(pill);
+            });
+        }
+    }
+
+    async function loadLoggedInUser() {
+        try {
+            const response = await fetch("/api/me", {
+                method: "GET",
+                credentials: "same-origin",
+                headers: { Accept: "application/json" }
+            });
+
+            if (response.status === 401) {
+                store.remove(KEYS.user);
+                window.location.href = "/auth";
+                return;
+            }
+
+            const data = await response.json();
+
+            if (!response.ok || !data.ok || !data.user) {
+                throw new Error(data.message || "Could not load your account.");
+            }
+
+            const account = data.user;
+
+            // Update the existing shared user object.
+            user.name = account.name || "User";
+            user.email = account.email || "";
+            user.roles.splice(
+                0,
+                user.roles.length,
+                ...(account.roles || []).filter(
+                    role => Object.hasOwn(MODES, role)
+                )
+            );
+
+            if (user.roles.length === 0) {
+                user.roles.push("student");
+            }
+
+            // Keep localStorage updated for other frontend code.
+            store.set(KEYS.user, JSON.stringify(user));
+
+            // Keep the selected mode valid for this account.
+            if (!user.roles.includes(activeMode)) {
+                activeMode = user.roles[0];
+            }
+
+            store.set(KEYS.mode, activeMode);
+            applyMode();
+            displayUser(user);
+
+        } catch (error) {
+            console.error("Could not load logged-in user:", error);
+        }
+    }
+
+    // Show cached details first, then replace them with server data.
+    displayUser(user);
+    loadLoggedInUser();
+
+    // Log out through Flask instead of just clearing localStorage.
+    const logout = document.getElementById("logoutBtn");
+
+    if (logout) {
+        logout.addEventListener("click", async (event) => {
+            event.preventDefault();
+
+            try {
+                const tokenResponse = await fetch("/api/csrf-token", {
+                    credentials: "same-origin"
+                });
+                const tokenData = await tokenResponse.json();
+
+                if (!tokenResponse.ok || !tokenData.csrf_token) {
+                    throw new Error("Could not prepare logout.");
+                }
+
+                const response = await fetch("/api/auth/logout", {
+                    method: "POST",
+                    credentials: "same-origin",
+                    headers: {
+                        Accept: "application/json",
+                        "X-CSRFToken": tokenData.csrf_token
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error("Logout failed.");
+                }
+
+                store.remove(KEYS.user);
+                store.remove(KEYS.mode);
+                window.location.href = "/auth";
+
+            } catch (error) {
+                console.error("Logout error:", error);
+                alert("Could not log out. Please try again.");
+            }
+        });
+    }
 })();
+
 
 
 /* ============================================================

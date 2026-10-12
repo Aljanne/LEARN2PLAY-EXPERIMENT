@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Learn2Play | Profile</title>
 
-    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body class="dashboard">
 
@@ -24,33 +24,77 @@
             <input type="text" placeholder="Search tutors, coaches, subjects...">
         </div>
 
-        <div class="tb-right">
-            <div class="tb-profile">
-                <button class="tb-avatar">JD</button>
+        
+<div class="tb-right">
+    <div class="tb-profile" id="profileMenu">
+        <button
+            class="tb-avatar"
+            id="userAvatar"
+            type="button"
+            aria-haspopup="menu"
+            aria-expanded="false"
+            aria-controls="profileDropdown"
+            aria-label="Open account menu"
+        >
+            ?
+        </button>
+
+        <div class="dropdown hidden" id="profileDropdown" role="menu">
+            <div class="dd-header">
+                <div class="dd-name" id="menuName">Loading...</div>
+                <div class="dd-email" id="menuEmail"></div>
+                <div class="dd-roles" id="menuRoles"></div>
             </div>
+
+            <a href="{{ url_for('main.profile') }}" role="menuitem">
+                View Profile
+            </a>
+
+            <a href="{{ url_for('main.sessions') }}" role="menuitem">
+                My Sessions
+            </a>
+
+            <a href="{{ url_for('main.settings') }}" role="menuitem">
+                Settings
+            </a>
+
+            <a href="{{ url_for('main.help') }}" role="menuitem">
+                Help &amp; Support
+            </a>
+
+            <a href="{{ url_for('main.auth_page') }}" id="logoutBtn" role="menuitem">
+                Log Out
+            </a>
         </div>
+    </div>
+</div>
+
     </header>
 
     <!-- Profile Content -->
     <main class="profile-page">
 
+        <div class="profile-navigation">
+    <a href="{{ url_for('main.dashboard') }}" class="back-dashboard-btn">
+        ← Back to Dashboard
+    </a>
+</div>
+
         <!-- Profile Hero -->
-        <section class="profile-header">
+<section class="profile-header">
+    <div class="profile-avatar" id="profileAvatar">?</div>
 
-            <div class="profile-avatar">
-                JD
-            </div>
+    <div class="profile-details">
+        <h1 id="profileName">Loading profile...</h1>
+        <p id="profileRoles">Loading roles...</p>
+        <p id="profileEmail"></p>
+    </div>
 
-            <div class="profile-details">
-                <h1>Juan Dela Cruz</h1>
-                <p>Student & Learner</p>
-            </div>
-
-            <button class="edit-profile-btn" id="editProfileBtn">
-                Edit Profile
-            </button>
-
-        </section>
+    <button class="edit-profile-btn" id="editProfileBtn" type="button">
+        Edit Profile
+    </button>
+</section>
+```
 
         <!-- Main Grid -->
         <section class="profile-grid">
@@ -61,10 +105,9 @@
                 <div class="profile-card">
                     <h3>Introduction</h3>
 
-                    <p>
-                        Welcome to Learn2Play. This section contains a short
-                        introduction about the user.
-                    </p>
+                    <p id="profileBio">
+    Loading introduction...
+</p>
 
                     <div class="profile-meta">
                         <span>📍 Philippines</span>
@@ -164,7 +207,7 @@
 
     </main>
 
-    <script src="../js/profile.js"></script>
+    <script src="{{ url_for('static', filename='js/profile.js') }}" defer></script>
 
 </body>
 </html>

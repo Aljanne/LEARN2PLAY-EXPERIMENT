@@ -851,6 +851,31 @@ a.side-item { text-decoration: none; }
     font-size:13px;
 }
 
+/* Profile page navigation */
+.profile-navigation {
+    display: flex;
+    justify-content: flex-start;
+    margin-bottom: 20px;
+}
+
+.back-dashboard-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border: 1px solid var(--accent-purple, #6b4eff);
+    border-radius: 10px;
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.back-dashboard-btn:hover {
+    background: rgba(107, 78, 255, 0.12);
+    transform: translateX(-2px);
+}
+
 @media(max-width:900px){
 
     .profile-grid{
@@ -865,6 +890,67 @@ a.side-item { text-decoration: none; }
     .edit-profile-btn{
         width:100%;
     }
+}
+
+/* Account dropdown positioning */
+.tb-profile {
+    position: relative;
+}
+
+.dropdown {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    width: 230px;
+    background: var(--bg-card, #1b184a);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    padding: 8px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+}
+
+/* Hide the menu until the avatar is clicked */
+.dropdown.hidden {
+    display: none !important;
+}
+
+/* Dropdown links */
+.dropdown a {
+    display: block;
+    padding: 10px 12px;
+    color: white;
+    text-decoration: none;
+    border-radius: 7px;
+}
+
+.dropdown a:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Account information at the top */
+.dd-header {
+    padding: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    margin-bottom: 6px;
+}
+
+.dd-name {
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.dd-email {
+    font-size: 12px;
+    opacity: 0.75;
+    overflow-wrap: anywhere;
+}
+
+.dd-roles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 8px;
 }
 
 /* ---------- dashboard responsive ---------- */
