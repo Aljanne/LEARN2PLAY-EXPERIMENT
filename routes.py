@@ -218,6 +218,27 @@ def update_profile():
     return jsonify({"ok": True, "message": "Profile updated.", "user": user_data(current_user)})
 
 
+@main.route("/api/account/password", methods=["POST"])
+@login_required
+def change_password():
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({"ok": False, "message": "Please submit your password details."}), 400
+
+    current_password = data.get("current_password")
+    new_password = data.get("new_password")
+    if not isinstance(current_password, str) or not isinstance(new_password, str):
+        return jsonify({"ok": False, "message": "Enter your current and new password."}), 400
+    if not current_user.check_password(current_password):
+        return jsonify({"ok": False, "message": "Your current password is incorrect."}), 400
+    if len(new_password) < 6 or len(new_password) > 128:
+        return jsonify({"ok": False, "message": "New password must be 6 to 128 characters."}), 400
+
+    current_user.set_password(new_password)
+    db.session.commit()
+    return jsonify({"ok": True, "message": "Password updated successfully."})
+
+
 # Example protected dashboard page.
 # This assumes dashboard.html is inside the templates folder.
 @main.route("/dashboard", methods=["GET"])

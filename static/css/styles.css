@@ -648,6 +648,59 @@ a.side-item { text-decoration: none; }
    PROFILE PAGE
 ========================== */
 
+/* ---------- settings page ---------- */
+.settings-topbar { gap: 28px; }
+.settings-nav { display: flex; align-items: center; gap: 22px; margin-left: auto; }
+.settings-nav a, .settings-help-link { color: var(--txt2); text-decoration: none; font-size: 14px; }
+.settings-nav a:hover, .settings-help-link:hover { color: var(--txt); }
+.settings-page { width: min(100%, 1000px); margin: 0 auto; padding: 30px 24px 64px; }
+.settings-back { margin-bottom: 28px; }
+.settings-heading { margin-bottom: 34px; }
+.settings-eyebrow { color: var(--lavender); font-size: 11px; letter-spacing: .13em; font-weight: 700; }
+.settings-heading h1 { color: var(--txt); font-size: 32px; margin-top: 6px; }
+.settings-heading > p:last-child { color: var(--txt2); margin-top: 8px; }
+.settings-section { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 28px; margin-top: 20px; align-items: start; }
+.settings-section-copy h2 { color: var(--txt); font-size: 17px; }
+.settings-section-copy p { color: var(--txt3); font-size: 13px; line-height: 1.5; margin-top: 6px; }
+.settings-panel { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 22px; }
+.settings-account-row { display: flex; align-items: center; gap: 15px; }
+.settings-account-avatar { flex: 0 0 52px; width: 52px; height: 52px; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(135deg,#f472b6,#a855f7); color: white; font-size: 17px; font-weight: 700; }
+.settings-account-info { min-width: 0; flex: 1; }
+.settings-account-info strong, .settings-account-info > span { display: block; overflow-wrap: anywhere; }
+.settings-account-info strong { color: var(--txt); font-size: 15px; }
+.settings-account-info > span { color: var(--txt3); font-size: 13px; margin-top: 3px; }
+.settings-account-info .dd-roles { margin-top: 8px; }
+.settings-secondary-btn { flex: 0 0 auto; color: var(--lavender); text-decoration: none; border: 1px solid rgba(124,108,245,.45); border-radius: 8px; padding: 9px 12px; font-size: 13px; }
+.settings-secondary-btn:hover { background: rgba(124,108,245,.12); }
+.settings-footnote { color: var(--txt3); border-top: 1px solid var(--line); padding-top: 14px; margin-top: 18px; font-size: 12px; line-height: 1.5; }
+.settings-password-form { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; }
+.settings-field { display: block; color: var(--txt2); font-size: 13px; margin-bottom: 14px; }
+.settings-field:first-child { grid-column: 1 / -1; }
+.settings-field input { display: block; width: 100%; margin-top: 7px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--bg); color: var(--txt); font: inherit; }
+.settings-field input:focus { outline: 2px solid rgba(124,108,245,.55); }
+.settings-field small { color: var(--txt3); display: block; margin-top: 5px; }
+.settings-form-message { grid-column: 1 / -1; min-height: 20px; color: var(--lavender); font-size: 13px; }
+.settings-save-btn { justify-self: start; grid-column: 1 / -1; }
+.settings-save-btn:disabled { opacity: .6; cursor: wait; }
+.settings-info-panel { display: flex; align-items: flex-start; gap: 13px; }
+.settings-info-icon { flex: 0 0 32px; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 9px; background: rgba(124,108,245,.15); color: var(--lavender); }
+.settings-info-panel p { color: var(--txt2); font-size: 13px; line-height: 1.6; }
+
+.settings-help-link { margin-left: 0; }
+@media (max-width: 700px) {
+  .settings-topbar { gap: 12px; }
+  .settings-nav { display: none; }
+  .settings-help-link { margin-left: auto; }
+  .settings-section { grid-template-columns: 1fr; gap: 12px; }
+  .settings-page { padding: 22px 16px 44px; }
+}
+@media (max-width: 480px) {
+  .settings-account-row { align-items: flex-start; flex-wrap: wrap; }
+  .settings-secondary-btn { margin-left: 66px; }
+  .settings-password-form { grid-template-columns: 1fr; }
+  .settings-field, .settings-field:first-child, .settings-form-message, .settings-save-btn { grid-column: 1; }
+}
+
 .profile-page{
     max-width:1200px;
     margin:0 auto;

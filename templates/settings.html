@@ -3,32 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings</title>
-
-    <style>
-        body{
-            font-family: Arial, sans-serif;
-            background:#f4f4f4;
-            display:flex;
-            justify-content:center;
-            align-items:center;
-            height:100vh;
-        }
-
-        .container{
-            text-align:center;
-            background:white;
-            padding:40px;
-            border-radius:10px;
-            box-shadow:0 0 10px rgba(0,0,0,.1);
-        }
-    </style>
+    <title>Settings | Learn2Play</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
-<body>
-    <div class="container">
-        <h1>⚙ Settings</h1>
-        <p>Settings page is currently under development.</p>
-        dashboard.htmlReturn Home</a>
-    </div>
+<body class="dashboard">
+    <header class="topbar settings-topbar">
+        <a class="tb-brand" href="{{ url_for('main.dashboard') }}">
+            <div class="logo">L2</div><div class="brand-name">Learn2Play</div>
+        </a>
+        <nav class="settings-nav" aria-label="Main navigation">
+            <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('main.sessions') }}">My sessions</a>
+            <a href="{{ url_for('main.profile') }}">Profile</a>
+        </nav>
+        <a class="settings-help-link" href="{{ url_for('main.help') }}">Help &amp; support</a>
+    </header>
+
+    <main class="settings-page">
+        <a class="back-dashboard-btn settings-back" href="{{ url_for('main.dashboard') }}">← Back to dashboard</a>
+        <div class="settings-heading">
+            <p class="settings-eyebrow">YOUR ACCOUNT</p>
+            <h1>Settings</h1>
+            <p>Manage your Learn2Play account and sign-in security.</p>
+        </div>
+
+        <section class="settings-section" aria-labelledby="account-heading">
+            <div class="settings-section-copy">
+                <h2 id="account-heading">Account</h2>
+                <p>Your account information and learning roles.</p>
+            </div>
+            <div class="settings-panel">
+                <div class="settings-account-row">
+                    <div class="settings-account-avatar" id="settingsAvatar">U</div>
+                    <div class="settings-account-info">
+                        <strong id="settingsName">Loading account…</strong>
+                        <span id="settingsEmail"></span>
+                        <div class="dd-roles" id="settingsRoles"></div>
+                    </div>
+                    <a class="settings-secondary-btn" href="{{ url_for('main.profile') }}">Edit profile</a>
+                </div>
+                <p class="settings-footnote">Your roles determine whether you can use Learn2Play as a student, mentor, or gaming coach.</p>
+            </div>
+        </section>
+
+        <section class="settings-section" aria-labelledby="security-heading">
+            <div class="settings-section-copy">
+                <h2 id="security-heading">Security</h2>
+                <p>Change the password you use to sign in.</p>
+            </div>
+            <form class="settings-panel settings-password-form" id="passwordForm">
+                <label class="settings-field">Current password
+                    <input type="password" id="currentPassword" autocomplete="current-password" required>
+                </label>
+                <label class="settings-field">New password
+                    <input type="password" id="newPassword" minlength="6" maxlength="128" autocomplete="new-password" required>
+                    <small>Use at least 6 characters.</small>
+                </label>
+                <label class="settings-field">Confirm new password
+                    <input type="password" id="confirmPassword" minlength="6" maxlength="128" autocomplete="new-password" required>
+                </label>
+                <p class="settings-form-message" id="passwordMessage" role="status" aria-live="polite"></p>
+                <button class="edit-profile-btn settings-save-btn" type="submit" id="passwordSave">Update password</button>
+            </form>
+        </section>
+
+        <section class="settings-section settings-info-section" aria-label="More settings">
+            <div class="settings-section-copy">
+                <h2>More controls</h2>
+                <p>Settings will grow as Learn2Play adds more features.</p>
+            </div>
+            <div class="settings-panel settings-info-panel">
+                <span class="settings-info-icon" aria-hidden="true">✦</span>
+                <p>Session reminders and messaging preferences will be available when those features are connected to your account.</p>
+            </div>
+        </section>
+    </main>
+    <script src="{{ url_for('static', filename='js/settings.js') }}" defer></script>
 </body>
 </html>
