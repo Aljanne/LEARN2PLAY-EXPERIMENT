@@ -3,50 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sessions</title>
-
-    <style>
-        body{
-            font-family: Arial, sans-serif;
-            margin:0;
-            background:#f5f5f5;
-        }
-
-        .container{
-            padding:40px;
-        }
-
-        .session-card{
-            background:white;
-            padding:20px;
-            margin-bottom:15px;
-            border-radius:10px;
-            box-shadow:0 2px 5px rgba(0,0,0,.1);
-        }
-    </style>
+    <title>My Sessions | Learn2Play</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
-<body>
+<body class="dashboard">
+    <header class="topbar settings-topbar">
+        <a class="tb-brand" href="{{ url_for('main.dashboard') }}">
+            <div class="logo">L2</div>
+            <div class="brand-name">Learn2Play</div>
+        </a>
+        <nav class="settings-nav" aria-label="Main navigation">
+            <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
+            <a class="active" href="{{ url_for('main.sessions') }}">My sessions</a>
+            <a href="{{ url_for('main.profile') }}">Profile</a>
+        </nav>
+        <a class="settings-help-link" href="{{ url_for('main.help') }}">Help &amp; support</a>
+        <div class="tb-profile" id="profileMenu">
+            <button class="tb-avatar" id="userAvatar" type="button"
+                    aria-haspopup="menu" aria-expanded="false" aria-controls="profileDropdown"
+                    aria-label="Open account menu">JD</button>
+            <div class="dropdown hidden" id="profileDropdown" role="menu">
+                <div class="dd-header">
+                    <div class="dd-name" id="menuName">Juan Dela Cruz</div>
+                    <div class="dd-email" id="menuEmail">juan@example.com</div>
+                    <div class="dd-roles" id="menuRoles"></div>
+                </div>
+                <a class="dd-item" role="menuitem" href="{{ url_for('main.profile') }}">View profile</a>
+                <a class="dd-item" role="menuitem" href="{{ url_for('main.sessions') }}">My sessions</a>
+                <a class="dd-item" role="menuitem" href="{{ url_for('main.settings') }}">Settings</a>
+                <a class="dd-item" role="menuitem" href="{{ url_for('main.help') }}">Help &amp; support</a>
+                <div class="dd-sep"></div>
+                <a class="dd-item danger" role="menuitem" href="{{ url_for('main.auth_page') }}" id="logoutBtn">Log out</a>
+            </div>
+        </div>
+    </header>
 
-<div class="container">
+    <main class="sessions-page">
+        <a class="back-dashboard-btn sessions-back" href="{{ url_for('main.dashboard') }}">&larr; Back to dashboard</a>
 
-    <h1>📅 Sessions</h1>
+        <div class="sessions-heading">
+            <div>
+                <p class="settings-eyebrow">YOUR LEARNING SCHEDULE</p>
+                <h1>My Sessions</h1>
+                <p>Keep track of your upcoming tutoring and coaching sessions.</p>
+            </div>
+            <a class="edit-profile-btn sessions-book-btn" href="{{ url_for('main.dashboard') }}">Find a mentor</a>
+        </div>
 
-    <div class="session-card">
-        <h3>Marketing Seminar</h3>
-        <p>Date: TBD</p>
-    </div>
+        <section class="session-summary" aria-label="Session summary">
+            <div class="session-summary-card"><span class="session-summary-label">Upcoming</span><strong id="upcomingCount">2</strong><small>sessions scheduled</small></div>
+            <div class="session-summary-card"><span class="session-summary-label">This week</span><strong>1</strong><small>session to attend</small></div>
+            <div class="session-summary-card"><span class="session-summary-label">Completed</span><strong>12</strong><small>sessions finished</small></div>
+        </section>
 
-    <div class="session-card">
-        <h3>Technopreneurship Workshop</h3>
-        <p>Date: TBD</p>
-    </div>
+        <section class="sessions-panel settings-panel" aria-labelledby="schedule-heading">
+            <div class="sessions-panel-heading">
+                <div>
+                    <h2 id="schedule-heading">Your schedule</h2>
+                    <p>Review your bookings and past learning activity.</p>
+                </div>
+                <div class="session-tabs" role="tablist" aria-label="Filter sessions">
+                    <button class="session-tab active" type="button" data-status="upcoming" role="tab" aria-selected="true">Upcoming</button>
+                    <button class="session-tab" type="button" data-status="completed" role="tab" aria-selected="false">Past sessions</button>
+                </div>
+            </div>
 
-    <div class="session-card">
-        <h3>Business Planning Session</h3>
-        <p>Date: TBD</p>
-    </div>
-
-</div>
-
+            <div class="session-list" id="sessionList">
+                <article class="scheduled-session" data-status="upcoming">
+                    <div class="session-date"><strong>27</strong><span>OCT</span></div>
+                    <div class="session-details"><div class="session-title-row"><h3>Mathematics &amp; Calculus</h3><span class="session-status upcoming-status">Upcoming</span></div><p>with Sophia Reyes</p><div class="session-meta"><span>Tuesday, October 27, 2026</span><span>10:00 AM &bull; 60 min</span></div></div>
+                    <div class="session-actions"><strong>$35</strong><div class="session-actions-buttons"><button type="button" class="session-action">View details</button><button type="button" class="session-action cancel-session-action">Cancel session</button></div></div>
+                </article>
+                <article class="scheduled-session" data-status="upcoming">
+                    <div class="session-date gaming-date"><strong>30</strong><span>OCT</span></div>
+                    <div class="session-details"><div class="session-title-row"><h3>Valorant &amp; FPS Strategy</h3><span class="session-status upcoming-status">Upcoming</span></div><p>with Marcus Chen</p><div class="session-meta"><span>Friday, October 30, 2026</span><span>7:30 PM &bull; 60 min</span></div></div>
+                    <div class="session-actions"><strong>$40</strong><div class="session-actions-buttons"><button type="button" class="session-action">View details</button><button type="button" class="session-action cancel-session-action">Cancel session</button></div></div>
+                </article>
+                <article class="scheduled-session" data-status="completed">
+                    <div class="session-date completed-date"><strong>14</strong><span>OCT</span></div>
+                    <div class="session-details"><div class="session-title-row"><h3>English &amp; Essay Writing</h3><span class="session-status completed-status">Completed</span></div><p>with Elena Vasquez</p><div class="session-meta"><span>Wednesday, October 14, 2026</span><span>4:00 PM &bull; 60 min</span></div></div>
+                    <div class="session-actions"><strong>$28</strong><button type="button" class="session-action">View notes</button></div>
+                </article>
+                <article class="scheduled-session" data-status="completed">
+                    <div class="session-date completed-date"><strong>09</strong><span>OCT</span></div>
+                    <div class="session-details"><div class="session-title-row"><h3>Chemistry &amp; Biology</h3><span class="session-status completed-status">Completed</span></div><p>with Amara Osei</p><div class="session-meta"><span>Friday, October 9, 2026</span><span>5:30 PM &bull; 60 min</span></div></div>
+                    <div class="session-actions"><strong>$30</strong><button type="button" class="session-action">View notes</button></div>
+                </article>
+                <article class="scheduled-session" data-status="completed">
+                    <div class="session-date completed-date"><strong>02</strong><span>OCT</span></div>
+                    <div class="session-details"><div class="session-title-row"><h3>League of Legends</h3><span class="session-status completed-status">Completed</span></div><p>with Kai Nakamura</p><div class="session-meta"><span>Friday, October 2, 2026</span><span>8:00 PM &bull; 60 min</span></div></div>
+                    <div class="session-actions"><strong>$45</strong><button type="button" class="session-action">View notes</button></div>
+                </article>
+            </div>
+            <p class="sessions-empty hidden" id="sessionsEmpty">There are no sessions in this view yet.</p>
+        </section>
+    </main>
+    <script src="{{ url_for('static', filename='js/script.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/sessions.js', v='session-tabs-2') }}" defer></script>
 </body>
 </html>

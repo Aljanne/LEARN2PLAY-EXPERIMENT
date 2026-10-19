@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Learn2Play — Dashboard</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css', v='search-animation-2') }}">
 </head>
 <body class="dashboard">
 
@@ -26,7 +26,7 @@
         <a href="dashboard.html" class="active">Home</a>
         <a href="#" data-nav="academic">Academic Tutors</a>
         <a href="#" data-nav="gaming">Gaming Coaches</a>
-        <a href="sessions.html">My Bookings</a>
+        <a href="{{ url_for('main.sessions') }}">My Bookings</a>
       </nav>
 
       <!-- Mode switcher: JS shows it only if the user has 2+ roles -->
@@ -76,7 +76,7 @@
       <!-- Every mode: links to the other pages -->
       <div class="side-label">Menu</div>
       <a class="side-item active" href="dashboard.html" aria-current="page">Dashboard</a>
-      <a class="side-item" href="sessions.html">Sessions</a>
+      <a class="side-item" href="{{ url_for('main.sessions') }}">Sessions</a>
       <a class="side-item" href="messages.html">Messages</a>
       <a class="side-item" href="{{ url_for('main.settings') }}">Settings</a>
 
@@ -104,6 +104,6 @@
     </main>
   </div>
 
-  <script src="{{ url_for('static', filename='js/script.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/script.js', v='search-animation-2') }}" defer></script>
 </body>
 </html>

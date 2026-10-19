@@ -481,6 +481,19 @@ body.dashboard {
   outline: 2px solid var(--lavender);
   outline-offset: 3px;
 }
+.grid.search-results-exiting .tutor-card {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.search-result-enter {
+  animation: search-result-enter 0.48s ease both;
+  animation-delay: var(--result-delay, 0ms);
+}
+@keyframes search-result-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 .card-media {
   position: relative;
   height: 150px;
@@ -554,6 +567,14 @@ body.dashboard {
   text-align: center;
   padding: 48px 0;
   grid-column: 1 / -1;
+}
+.search-empty-enter { animation: search-empty-enter 0.28s ease both; }
+@keyframes search-empty-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .search-result-enter, .search-empty-enter { animation: none; }
 }
 
 /* ---------- role picker ---------- */
@@ -743,6 +764,51 @@ a.side-item { text-decoration: none; }
 .mentor-detail-row span { color: var(--txt3); font-size: 12px; }
 .mentor-detail-row strong { color: var(--txt2); font-size: 12px; text-align: right; }
 
+/* Scheduling page */
+.sessions-page { width: min(100%, 1080px); margin: 0 auto; padding: 30px 24px 64px; }
+.sessions-back { margin-bottom: 24px; }
+.sessions-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
+.sessions-heading h1 { color: var(--txt); font-size: 32px; margin-top: 6px; }
+.sessions-heading p:last-child { color: var(--txt2); margin-top: 8px; }
+.sessions-book-btn { flex: 0 0 auto; text-decoration: none; }
+.session-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+.session-summary-card { background: var(--card); border: 1px solid var(--line); border-radius: 13px; padding: 17px 18px; }
+.session-summary-label { display: block; color: var(--txt3); font-size: 12px; }
+.session-summary-card strong { display: block; color: var(--txt); font-size: 27px; margin-top: 7px; }
+.session-summary-card small { color: var(--txt3); font-size: 11px; }
+.sessions-panel { padding: 24px; }
+.sessions-panel-heading { display: flex; align-items: end; justify-content: space-between; gap: 20px; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
+.sessions-panel-heading h2 { color: var(--txt); font-size: 18px; }
+.sessions-panel-heading p { color: var(--txt3); font-size: 13px; margin-top: 5px; }
+.session-tabs { display: flex; gap: 5px; padding: 4px; background: var(--bg); border: 1px solid var(--line); border-radius: 9px; }
+.session-tab { color: var(--txt3); border-radius: 6px; padding: 8px 11px; font-size: 12px; }
+.session-tab:hover { color: var(--txt); }
+.session-tab.active { color: var(--txt); background: var(--card); box-shadow: 0 2px 7px rgba(0,0,0,.18); }
+.session-list { display: grid; gap: 12px; margin-top: 16px; }
+.scheduled-session { display: grid; grid-template-columns: 58px minmax(0, 1fr) auto; align-items: center; gap: 16px; border: 1px solid var(--line); border-radius: 11px; padding: 15px; transition: border-color .18s, transform .18s; }
+.scheduled-session[hidden] { display: none; }
+.scheduled-session:hover { border-color: rgba(124,108,245,.5); transform: translateY(-1px); }
+.session-date { display: grid; place-items: center; align-content: center; width: 58px; height: 58px; border-radius: 11px; background: rgba(124,108,245,.14); color: var(--lavender); }
+.session-date strong { font-size: 22px; line-height: 1; }
+.session-date span { font-size: 10px; font-weight: 700; letter-spacing: .08em; margin-top: 5px; }
+.gaming-date { background: rgba(74,222,128,.13); color: #7ceea4; }
+.completed-date { background: rgba(162,167,187,.12); color: var(--txt3); }
+.session-title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.session-title-row h3 { color: var(--txt); font-size: 14px; }
+.session-details > p { color: var(--txt2); font-size: 12px; margin-top: 5px; }
+.session-meta { display: flex; flex-wrap: wrap; gap: 14px; color: var(--txt3); font-size: 11px; margin-top: 10px; }
+.session-status { border-radius: 999px; padding: 4px 8px; font-size: 10px; font-weight: 600; }
+.upcoming-status { color: #7ceea4; background: rgba(74,222,128,.13); }
+.completed-status { color: var(--txt3); background: rgba(162,167,187,.12); }
+.session-actions { display: grid; justify-items: end; gap: 9px; }
+.session-actions-buttons { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
+.session-actions strong { color: var(--txt); font-size: 15px; }
+.session-action { color: var(--lavender); border: 1px solid rgba(124,108,245,.4); border-radius: 7px; padding: 7px 9px; font-size: 11px; }
+.session-action:hover { color: #fff; background: var(--purple); border-color: var(--purple); }
+.cancel-session-action { color: var(--danger); border-color: rgba(248,113,113,.35); }
+.cancel-session-action:hover { color: #fff; background: var(--danger); border-color: var(--danger); }
+.sessions-empty { color: var(--txt3); text-align: center; padding: 42px 0 22px; font-size: 13px; }
+
 @media (max-width: 700px) {
   .settings-topbar { gap: 12px; }
   .settings-nav { display: none; }
@@ -754,6 +820,16 @@ a.side-item { text-decoration: none; }
   .mentor-profile-hero { grid-template-columns: auto minmax(0, 1fr); padding: 20px; }
   .mentor-profile-booking { grid-column: 1 / -1; justify-items: start; width: 100%; padding-top: 15px; border-top: 1px solid var(--line); }
   .mentor-profile-layout { grid-template-columns: 1fr; }
+  .sessions-page { padding: 22px 16px 44px; }
+  .sessions-heading { align-items: start; flex-direction: column; }
+  .sessions-book-btn { width: 100%; text-align: center; }
+  .sessions-panel-heading { align-items: start; flex-direction: column; }
+  .session-tabs { width: 100%; }
+  .session-tab { flex: 1; }
+  .scheduled-session { grid-template-columns: 52px minmax(0, 1fr); }
+  .session-date { width: 52px; height: 52px; }
+  .session-actions { grid-column: 2; justify-items: start; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .session-actions-buttons { justify-content: flex-start; }
 }
 @media (max-width: 480px) {
   .settings-account-row { align-items: flex-start; flex-wrap: wrap; }
