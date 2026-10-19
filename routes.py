@@ -7,6 +7,7 @@ from flask_login import (
     login_required,
 )
 from flask_wtf.csrf import generate_csrf
+from urllib.parse import urlparse
 
 from extensions import db
 from models import User
@@ -183,6 +184,38 @@ def get_current_user():
         "ok": True,
         "user": user_data(current_user),
     })
+
+
+@main.route("/api/profile", methods=["POST"])
+@login_required
+def update_profile():
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({"ok": False, "message": "Please submit profile details."}), 400
+
+    name = data.get("name")
+    bio = data.get("bio", "")
+    picture = data.get("profile_picture", "")
+    if not all(isinstance(value, str) for value in (name, bio, picture)):
+        return jsonify({"ok": False, "message": "Profile fields must be text."}), 400
+
+    name, bio, picture = name.strip(), bio.strip(), picture.strip()
+    if not 2 <= len(name) <= 80:
+        return jsonify({"ok": False, "message": "Name must be between 2 and 80 characters."}), 400
+    if len(bio) > 500:
+        return jsonify({"ok": False, "message": "Introduction must not exceed 500 characters."}), 400
+    if len(picture) > 255:
+        return jsonify({"ok": False, "message": "Profile picture URL is too long."}), 400
+    if picture:
+        parsed = urlparse(picture)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            return jsonify({"ok": False, "message": "Profile picture must be an HTTP or HTTPS URL."}), 400
+
+    current_user.display_name = name
+    current_user.bio = bio or None
+    current_user.profile_picture = picture or None
+    db.session.commit()
+    return jsonify({"ok": True, "message": "Profile updated.", "user": user_data(current_user)})
 
 
 # Example protected dashboard page.

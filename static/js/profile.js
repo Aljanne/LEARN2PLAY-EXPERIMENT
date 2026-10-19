@@ -56,11 +56,25 @@ async function loadProfile() {
             .slice(0, 2)
             .toUpperCase();
 
-        avatarElement.textContent = initials || "U";
+        renderAvatar(avatarElement, user.profile_picture, initials);
 
         if (topAvatar) {
             topAvatar.textContent = initials || "U";
         }
+
+        const nameInput = document.getElementById("editName");
+        const bioInput = document.getElementById("editBio");
+        const pictureInput = document.getElementById("editPicture");
+        if (nameInput) nameInput.value = user.name || "";
+        if (bioInput) {
+            bioInput.value = user.bio || "";
+            updateBioCount();
+        }
+        if (pictureInput) pictureInput.value = user.profile_picture || "";
+        const menuName = document.getElementById("menuName");
+        const menuEmail = document.getElementById("menuEmail");
+        if (menuName) menuName.textContent = user.name || "User";
+        if (menuEmail) menuEmail.textContent = user.email || "";
 
         // Display the user's saved bio, if available.
         bioElement.textContent = user.bio ||
@@ -74,6 +88,79 @@ async function loadProfile() {
 }
 
 loadProfile();
+
+function renderAvatar(element, picture, initials) {
+    if (!element) return;
+    element.replaceChildren();
+    if (picture) {
+        const image = document.createElement("img");
+        image.src = picture;
+        image.alt = "Profile picture";
+        image.onerror = () => { element.textContent = initials || "U"; };
+        element.appendChild(image);
+    } else {
+        element.textContent = initials || "U";
+    }
+}
+
+function updateBioCount() {
+    const input = document.getElementById("editBio");
+    const count = document.getElementById("bioCount");
+    if (input && count) count.textContent = String(input.value.length);
+}
+
+(function setupProfileEditor() {
+    const form = document.getElementById("profileEditForm");
+    const editButton = document.getElementById("editProfileBtn");
+    const cancelButton = document.getElementById("cancelEditBtn");
+    const message = document.getElementById("profileFormMessage");
+    const bio = document.getElementById("editBio");
+    if (!form || !editButton) return;
+
+    editButton.addEventListener("click", () => {
+        form.classList.remove("hidden");
+        form.scrollIntoView({ behavior: "smooth", block: "center" });
+        document.getElementById("editName").focus();
+        message.textContent = "";
+    });
+    cancelButton.addEventListener("click", () => {
+        form.classList.add("hidden");
+        loadProfile();
+    });
+    bio.addEventListener("input", updateBioCount);
+
+    form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const button = document.getElementById("saveProfileBtn");
+        button.disabled = true;
+        message.textContent = "Saving…";
+        try {
+            const tokenResponse = await fetch("/api/csrf-token", { credentials: "same-origin" });
+            const tokenData = await tokenResponse.json();
+            if (!tokenResponse.ok || !tokenData.csrf_token) throw new Error("Could not prepare profile update.");
+
+            const response = await fetch("/api/profile", {
+                method: "POST",
+                credentials: "same-origin",
+                headers: { "Content-Type": "application/json", Accept: "application/json", "X-CSRFToken": tokenData.csrf_token },
+                body: JSON.stringify({
+                    name: document.getElementById("editName").value,
+                    bio: bio.value,
+                    profile_picture: document.getElementById("editPicture").value
+                })
+            });
+            const data = await response.json();
+            if (!response.ok || !data.ok) throw new Error(data.message || "Could not save profile.");
+            message.textContent = "Profile saved successfully.";
+            await loadProfile();
+            form.classList.add("hidden");
+        } catch (error) {
+            message.textContent = error.message || "Could not save your profile. Please try again.";
+        } finally {
+            button.disabled = false;
+        }
+    });
+})();
 
 // Profile page account dropdown
 (function () {

@@ -82,7 +82,7 @@
 
         <!-- Profile Hero -->
 <section class="profile-header">
-    <div class="profile-avatar" id="profileAvatar">?</div>
+    <div class="profile-avatar" id="profileAvatar" aria-label="Profile picture">?</div>
 
     <div class="profile-details">
         <h1 id="profileName">Loading profile...</h1>
@@ -94,7 +94,26 @@
         Edit Profile
     </button>
 </section>
-```
+
+<form class="profile-card profile-edit-form hidden" id="profileEditForm">
+    <h2>Edit your profile</h2>
+    <label class="profile-field">Display name
+        <input id="editName" name="name" type="text" minlength="2" maxlength="80" required>
+    </label>
+    <label class="profile-field">Introduction
+        <textarea id="editBio" name="bio" maxlength="500" rows="4" placeholder="Tell people a little about yourself"></textarea>
+        <small><span id="bioCount">0</span>/500 characters</small>
+    </label>
+    <label class="profile-field">Profile picture URL
+        <input id="editPicture" name="profile_picture" type="url" maxlength="255" placeholder="https://example.com/photo.jpg">
+        <small>Use a public image URL. Leave blank to use your initials.</small>
+    </label>
+    <p id="profileFormMessage" class="profile-form-message" role="status" aria-live="polite"></p>
+    <div class="profile-form-actions">
+        <button class="edit-profile-btn" type="submit" id="saveProfileBtn">Save changes</button>
+        <button class="profile-cancel-btn" type="button" id="cancelEditBtn">Cancel</button>
+    </div>
+</form>
 
         <!-- Main Grid -->
         <section class="profile-grid">
