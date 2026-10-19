@@ -27,6 +27,31 @@
             <p>Manage your Learn2Play account and sign-in security.</p>
         </div>
 
+        <section class="settings-section" aria-labelledby="profile-information-heading">
+            <div class="settings-section-copy">
+                <h2 id="profile-information-heading">Profile Information</h2>
+                <p>Keep your personal account details up to date.</p>
+            </div>
+            <form class="settings-panel settings-profile-form" id="profileInformationForm">
+                <div class="settings-profile-name-fields">
+                    <label class="settings-field">First Name
+                        <input type="text" id="settingsFirstName" autocomplete="given-name" required>
+                    </label>
+                    <label class="settings-field">Last Name
+                        <input type="text" id="settingsLastName" autocomplete="family-name">
+                    </label>
+                </div>
+                <label class="settings-field">Email Address
+                    <input type="email" id="settingsProfileEmail" autocomplete="email" readonly>
+                </label>
+                <label class="settings-field">Phone Number
+                    <input type="tel" id="settingsPhone" autocomplete="tel" placeholder="+1 (555) 019-2834">
+                </label>
+                <p class="settings-form-message" id="profileInformationMessage" role="status" aria-live="polite"></p>
+                <button class="edit-profile-btn settings-save-btn" type="submit" id="profileInformationSave">Save profile</button>
+            </form>
+        </section>
+
         <section class="settings-section" aria-labelledby="account-heading">
             <div class="settings-section-copy">
                 <h2 id="account-heading">Account</h2>
@@ -62,9 +87,55 @@
                 <label class="settings-field">Confirm new password
                     <input type="password" id="confirmPassword" minlength="6" maxlength="128" autocomplete="new-password" required>
                 </label>
+                <div class="settings-security-divider"></div>
+                <label class="settings-preference-row settings-security-toggle-row">
+                    <span class="settings-preference-copy">
+                        <strong>Two-Factor Authentication</strong>
+                        <span>Secure your account with an extra verification layer.</span>
+                    </span>
+                    <input class="settings-toggle-input" type="checkbox" data-preference="twoFactor">
+                    <span class="settings-toggle" aria-hidden="true"></span>
+                </label>
                 <p class="settings-form-message" id="passwordMessage" role="status" aria-live="polite"></p>
                 <button class="edit-profile-btn settings-save-btn" type="submit" id="passwordSave">Update password</button>
             </form>
+        </section>
+
+        <section class="settings-section" aria-labelledby="preferences-heading">
+            <div class="settings-section-copy">
+                <h2 id="preferences-heading">Preferences</h2>
+                <p>Choose which updates and reminders you receive.</p>
+            </div>
+            <div class="settings-panel settings-preferences-panel">
+                <h3 class="settings-preferences-title">Account Preferences</h3>
+
+                <label class="settings-preference-row">
+                    <span class="settings-preference-copy">
+                        <strong>Email Notifications</strong>
+                        <span>Receive updates about your booking requests.</span>
+                    </span>
+                    <input class="settings-toggle-input" type="checkbox" data-preference="emailNotifications" checked>
+                    <span class="settings-toggle" aria-hidden="true"></span>
+                </label>
+
+                <label class="settings-preference-row">
+                    <span class="settings-preference-copy">
+                        <strong>Booking Reminders</strong>
+                        <span>Get notifications 24h before scheduled sessions.</span>
+                    </span>
+                    <input class="settings-toggle-input" type="checkbox" data-preference="bookingReminders" checked>
+                    <span class="settings-toggle" aria-hidden="true"></span>
+                </label>
+
+                <label class="settings-preference-row">
+                    <span class="settings-preference-copy">
+                        <strong>Marketing Offers</strong>
+                        <span>Occasional discount coupons and updates.</span>
+                    </span>
+                    <input class="settings-toggle-input" type="checkbox" data-preference="marketingOffers">
+                    <span class="settings-toggle" aria-hidden="true"></span>
+                </label>
+            </div>
         </section>
 
         <section class="settings-section settings-info-section" aria-label="More settings">

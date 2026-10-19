@@ -677,11 +677,30 @@ a.side-item { text-decoration: none; }
 .settings-field { display: block; color: var(--txt2); font-size: 13px; margin-bottom: 14px; }
 .settings-field:first-child { grid-column: 1 / -1; }
 .settings-field input { display: block; width: 100%; margin-top: 7px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--bg); color: var(--txt); font: inherit; }
+.settings-field input[readonly] { color: var(--txt3); cursor: not-allowed; }
 .settings-field input:focus { outline: 2px solid rgba(124,108,245,.55); }
 .settings-field small { color: var(--txt3); display: block; margin-top: 5px; }
 .settings-form-message { grid-column: 1 / -1; min-height: 20px; color: var(--lavender); font-size: 13px; }
 .settings-save-btn { justify-self: start; grid-column: 1 / -1; }
 .settings-save-btn:disabled { opacity: .6; cursor: wait; }
+.settings-profile-form { display: grid; gap: 4px 16px; }
+.settings-profile-name-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.settings-profile-form > .settings-field { margin-bottom: 10px; }
+.settings-security-divider { grid-column: 1 / -1; height: 1px; margin: 2px 0 4px; background: var(--line); }
+.settings-security-toggle-row { grid-column: 1 / -1; min-height: 62px; padding: 8px 0 12px; border-bottom: 0; }
+.settings-preferences-panel { padding: 22px 20px 4px; }
+.settings-preferences-title { color: var(--txt); font-size: 17px; margin-bottom: 6px; }
+.settings-preference-row { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 68px; padding: 14px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+.settings-preference-row:last-child { border-bottom: 0; }
+.settings-preference-copy { display: grid; gap: 4px; min-width: 0; }
+.settings-preference-copy strong { color: var(--txt); font-size: 13px; }
+.settings-preference-copy span { color: var(--txt3); font-size: 12px; line-height: 1.45; }
+.settings-toggle-input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.settings-toggle { flex: 0 0 auto; position: relative; width: 38px; height: 22px; border-radius: 999px; background: var(--line); transition: background .2s ease; }
+.settings-toggle::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .2s ease; }
+.settings-toggle-input:checked + .settings-toggle { background: #111827; }
+.settings-toggle-input:checked + .settings-toggle::after { transform: translateX(16px); }
+.settings-toggle-input:focus-visible + .settings-toggle { outline: 2px solid var(--lavender); outline-offset: 3px; }
 .settings-info-panel { display: flex; align-items: flex-start; gap: 13px; }
 .settings-info-icon { flex: 0 0 32px; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 9px; background: rgba(124,108,245,.15); color: var(--lavender); }
 .settings-info-panel p { color: var(--txt2); font-size: 13px; line-height: 1.6; }
@@ -698,7 +717,10 @@ a.side-item { text-decoration: none; }
   .settings-account-row { align-items: flex-start; flex-wrap: wrap; }
   .settings-secondary-btn { margin-left: 66px; }
   .settings-password-form { grid-template-columns: 1fr; }
+  .settings-profile-name-fields { grid-template-columns: 1fr; gap: 0; }
   .settings-field, .settings-field:first-child, .settings-form-message, .settings-save-btn { grid-column: 1; }
+  .settings-preferences-panel { padding-left: 16px; padding-right: 16px; }
+  .settings-preference-row { gap: 12px; }
 }
 
 .profile-page{
