@@ -470,11 +470,16 @@ body.dashboard {
   border: 1px solid var(--line);
   border-radius: 14px;
   overflow: hidden;
+  cursor: pointer;
   transition: border-color 0.18s, transform 0.18s;
 }
 .tutor-card:hover {
   border-color: rgba(124, 108, 245, 0.5);
   transform: translateY(-2px);
+}
+.tutor-card:focus-visible {
+  outline: 2px solid var(--lavender);
+  outline-offset: 3px;
 }
 .card-media {
   position: relative;
@@ -706,12 +711,49 @@ a.side-item { text-decoration: none; }
 .settings-info-panel p { color: var(--txt2); font-size: 13px; line-height: 1.6; }
 
 .settings-help-link { margin-left: 0; }
+
+/* Mentor profile pages */
+.mentor-profile-page { width: min(100%, 1100px); margin: 0 auto; padding: 30px 24px 64px; }
+.mentor-profile-page > .back-dashboard-btn { display: inline-block; margin-bottom: 22px; }
+.mentor-profile-topbar { gap: 28px; }
+.mentor-profile-hero { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 22px; padding: 26px; }
+.mentor-profile-avatar { width: 86px; height: 86px; display: grid; place-items: center; border-radius: 22px; background: linear-gradient(135deg, #7c6cf5, #22d3ee); color: #fff; font-size: 25px; font-weight: 800; }
+.mentor-profile-heading h1 { color: var(--txt); font-size: 30px; margin-top: 10px; }
+.mentor-profile-heading > p { color: var(--txt2); margin-top: 5px; }
+.mentor-profile-rating { display: flex; align-items: center; gap: 8px; color: var(--txt3); font-size: 13px; margin-top: 12px; }
+.mentor-stars { color: #fbbf24; letter-spacing: 2px; }
+.mentor-profile-rating strong { color: var(--txt); }
+.mentor-profile-booking { display: grid; justify-items: end; gap: 6px; }
+.mentor-profile-booking > span { color: var(--txt3); font-size: 12px; }
+.mentor-profile-booking > strong { color: var(--txt); font-size: 27px; }
+.mentor-profile-booking small { color: var(--txt3); font-size: 12px; font-weight: 400; }
+.mentor-profile-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; margin-top: 20px; align-items: start; }
+.mentor-profile-main, .mentor-profile-sidebar { display: grid; gap: 20px; }
+.mentor-profile-card h2 { color: var(--txt); font-size: 17px; margin-bottom: 12px; }
+.mentor-profile-card p { color: var(--txt2); line-height: 1.7; font-size: 14px; }
+.mentor-specialties { display: flex; flex-wrap: wrap; gap: 9px; }
+.mentor-specialties span { color: var(--lavender); background: rgba(124,108,245,.13); border: 1px solid rgba(124,108,245,.25); border-radius: 999px; padding: 7px 11px; font-size: 12px; }
+.mentor-review-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.mentor-review-heading h2 { margin-bottom: 0; }
+.mentor-review-heading span { color: var(--txt3); font-size: 12px; }
+.mentor-profile-card blockquote { color: var(--txt2); border-left: 3px solid var(--lavender); padding-left: 14px; margin: 4px 0 8px; line-height: 1.6; font-size: 14px; }
+.mentor-profile-card > small { color: var(--txt3); font-size: 12px; }
+.mentor-detail-row { display: flex; justify-content: space-between; gap: 14px; padding: 13px 0; border-bottom: 1px solid var(--line); }
+.mentor-detail-row:last-child { border-bottom: 0; padding-bottom: 0; }
+.mentor-detail-row span { color: var(--txt3); font-size: 12px; }
+.mentor-detail-row strong { color: var(--txt2); font-size: 12px; text-align: right; }
+
 @media (max-width: 700px) {
   .settings-topbar { gap: 12px; }
   .settings-nav { display: none; }
   .settings-help-link { margin-left: auto; }
   .settings-section { grid-template-columns: 1fr; gap: 12px; }
   .settings-page { padding: 22px 16px 44px; }
+  .mentor-profile-page { padding: 22px 16px 44px; }
+  .mentor-profile-topbar { gap: 12px; }
+  .mentor-profile-hero { grid-template-columns: auto minmax(0, 1fr); padding: 20px; }
+  .mentor-profile-booking { grid-column: 1 / -1; justify-items: start; width: 100%; padding-top: 15px; border-top: 1px solid var(--line); }
+  .mentor-profile-layout { grid-template-columns: 1fr; }
 }
 @media (max-width: 480px) {
   .settings-account-row { align-items: flex-start; flex-wrap: wrap; }
@@ -721,6 +763,10 @@ a.side-item { text-decoration: none; }
   .settings-field, .settings-field:first-child, .settings-form-message, .settings-save-btn { grid-column: 1; }
   .settings-preferences-panel { padding-left: 16px; padding-right: 16px; }
   .settings-preference-row { gap: 12px; }
+  .mentor-profile-hero { grid-template-columns: 1fr; }
+  .mentor-profile-avatar { width: 68px; height: 68px; }
+  .mentor-profile-heading h1 { font-size: 25px; }
+  .mentor-profile-rating { flex-wrap: wrap; }
 }
 
 .profile-page{

@@ -1,5 +1,5 @@
 
-from flask import Blueprint, jsonify, request, render_template, redirect, url_for
+from flask import Blueprint, jsonify, request, render_template, redirect, url_for, abort
 from flask_login import (
     current_user,
     login_user,
@@ -15,6 +15,90 @@ from models import User
 
 # All routes in this blueprint will be registered under these URLs.
 main = Blueprint("main", __name__)
+
+
+# The dashboard currently uses demo mentor data. Keeping the profile data here
+# gives each dashboard card a real detail page until mentors are database-backed.
+MENTORS = [
+    {
+        "slug": "sophia-reyes",
+        "name": "Sophia Reyes",
+        "subject": "Mathematics & Calculus",
+        "category": "Academic Tutor",
+        "rating": 4.9,
+        "reviews": 143,
+        "price": 35,
+        "experience": "6 years teaching experience",
+        "response_time": "Usually responds within 1 hour",
+        "bio": "I help students turn difficult mathematics into clear, manageable steps. My sessions combine concept review, guided practice, and exam strategy so students leave knowing how to solve the next problem on their own.",
+        "specialties": ["Calculus", "Linear Algebra", "Exam Strategy", "Study Planning"],
+    },
+    {
+        "slug": "marcus-chen",
+        "name": "Marcus Chen",
+        "subject": "Valorant & FPS Strategy",
+        "category": "Gaming Coach",
+        "rating": 4.8,
+        "reviews": 211,
+        "price": 40,
+        "experience": "Former professional Valorant player",
+        "response_time": "Usually responds within 2 hours",
+        "bio": "I coach players from Silver to Immortal with practical feedback they can use immediately. We focus on positioning, aim routines, communication, and making better decisions under pressure.",
+        "specialties": ["Valorant", "Aim Training", "Positioning", "Team Play"],
+    },
+    {
+        "slug": "amara-osei",
+        "name": "Amara Osei",
+        "subject": "Chemistry & Biology",
+        "category": "Academic Tutor",
+        "rating": 4.7,
+        "reviews": 98,
+        "price": 30,
+        "experience": "4 years tutoring STEM subjects",
+        "response_time": "Usually responds within 3 hours",
+        "bio": "I make science accessible through visual explanations, real-world examples, and structured practice. My goal is to help students understand the why behind each topic, not just memorize answers.",
+        "specialties": ["Organic Chemistry", "Cell Biology", "Study Skills", "Exam Preparation"],
+    },
+    {
+        "slug": "kai-nakamura",
+        "name": "Kai Nakamura",
+        "subject": "League of Legends",
+        "category": "Gaming Coach",
+        "rating": 4.9,
+        "reviews": 175,
+        "price": 45,
+        "experience": "Grandmaster player with 6 years of competition",
+        "response_time": "Usually responds within 1 hour",
+        "bio": "I help mid- to high-elo players climb through VOD reviews, matchup planning, and better macro decisions. Every session ends with a focused plan for your next games.",
+        "specialties": ["League of Legends", "VOD Review", "Macro Coaching", "Climbing Plans"],
+    },
+    {
+        "slug": "elena-vasquez",
+        "name": "Elena Vasquez",
+        "subject": "English & Essay Writing",
+        "category": "Academic Tutor",
+        "rating": 4.6,
+        "reviews": 67,
+        "price": 28,
+        "experience": "MA graduate with 4 years tutoring experience",
+        "response_time": "Usually responds within 4 hours",
+        "bio": "I help students find their voice and build stronger arguments. Sessions are supportive and practical, with clear feedback on structure, evidence, clarity, and revision.",
+        "specialties": ["Essay Writing", "Critical Reading", "Research Papers", "College Applications"],
+    },
+    {
+        "slug": "darius-bell",
+        "name": "Darius Bell",
+        "subject": "Apex Legends & Battle Royale",
+        "category": "Gaming Coach",
+        "rating": 4.7,
+        "reviews": 132,
+        "price": 38,
+        "experience": "Masters-rank player with 5,000+ hours",
+        "response_time": "Usually responds within 2 hours",
+        "bio": "I coach players on movement, rotations, loot routes, and endgame decisions. We will review your gameplay and build repeatable habits that make your matches more consistent.",
+        "specialties": ["Apex Legends", "Movement", "Rotations", "Endgame Decisions"],
+    },
+]
 
 @main.route("/")
 def home():
@@ -237,6 +321,15 @@ def change_password():
     current_user.set_password(new_password)
     db.session.commit()
     return jsonify({"ok": True, "message": "Password updated successfully."})
+
+
+@main.route("/mentors/<slug>")
+@login_required
+def mentor_profile(slug):
+    mentor = next((item for item in MENTORS if item["slug"] == slug), None)
+    if mentor is None:
+        abort(404)
+    return render_template("mentor-profile.html", mentor=mentor)
 
 
 # Example protected dashboard page.

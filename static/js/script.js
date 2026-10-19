@@ -311,32 +311,32 @@ window.L2 = { user, getMode: () => activeMode, setMode };
   /* ---------- data (swap for API later) ---------- */
   const TUTORS = [
     {
-      name: "Sophia Reyes", subject: "Mathematics & Calculus",
+      slug: "sophia-reyes", name: "Sophia Reyes", subject: "Mathematics & Calculus",
       rating: 4.9, reviews: 143, price: 35, category: "academic", variant: 0,
       desc: "PhD candidate at MIT specializing in applied mathematics. I help students master calculus, linear algebra and exam strategy."
     },
     {
-      name: "Marcus Chen", subject: "Valorant & FPS Strategy",
+      slug: "marcus-chen", name: "Marcus Chen", subject: "Valorant & FPS Strategy",
       rating: 4.8, reviews: 211, price: 40, category: "gaming", variant: 1,
       desc: "Former pro Valorant player (Radiant rank). I coach players from Silver to Immortal on positioning, aim and team play."
     },
     {
-      name: "Amara Osei", subject: "Chemistry & Biology",
+      slug: "amara-osei", name: "Amara Osei", subject: "Chemistry & Biology",
       rating: 4.7, reviews: 98, price: 30, category: "academic", variant: 2,
       desc: "Pre-med student & STEM tutor with a passion for making science accessible. Specializing in organic chemistry and cell biology."
     },
     {
-      name: "Kai Nakamura", subject: "League of Legends",
+      slug: "kai-nakamura", name: "Kai Nakamura", subject: "League of Legends",
       rating: 4.9, reviews: 175, price: 45, category: "gaming", variant: 3,
       desc: "Grandmaster LoL player with 6 years of competitive play. I help mid to high-elo players climb with VOD reviews and macro coaching."
     },
     {
-      name: "Elena Vasquez", subject: "English & Essay Writing",
+      slug: "elena-vasquez", name: "Elena Vasquez", subject: "English & Essay Writing",
       rating: 4.6, reviews: 67, price: 28, category: "academic", variant: 4,
       desc: "English Literature MA graduate with 4 years of tutoring experience. I specialize in college essay writing and critical reading."
     },
     {
-      name: "Darius Bell", subject: "Apex Legends & Battle Royale",
+      slug: "darius-bell", name: "Darius Bell", subject: "Apex Legends & Battle Royale",
       rating: 4.7, reviews: 132, price: 38, category: "gaming", variant: 5,
       desc: "Masters-rank Apex Legends player with 5000+ hours. I coach on movement, rotations, loot routes and endgame decisions."
     }
@@ -433,7 +433,7 @@ if(editBtn){
 
     // Text fields go through esc() because they will come from the database later.
     return (
-      '<article class="tutor-card">' +
+      '<article class="tutor-card" data-slug="' + esc(t.slug) + '" tabindex="0" role="link" aria-label="View profile for ' + esc(t.name) + '">' +
         '<div class="card-media">' + media + badge +
           '<div class="card-avatar" style="background:linear-gradient(135deg,' + grad[0] + "," + grad[1] + ')">' +
             esc(initialsOf(t.name)) +
@@ -448,7 +448,7 @@ if(editBtn){
           '<p class="card-desc">' + esc(t.desc) + "</p>" +
           '<div class="card-footer">' +
             '<span class="price-lg">$' + esc(t.price) + "/hr</span>" +
-            '<button class="view-btn" type="button" data-tutor="' + esc(t.name) + '">View Profile &rarr;</button>' +
+            '<button class="view-btn" type="button" data-slug="' + esc(t.slug) + '" data-tutor="' + esc(t.name) + '">View Profile &rarr;</button>' +
           "</div>" +
         "</div>" +
       "</article>"
@@ -500,12 +500,19 @@ if(editBtn){
     });
   }
 
-  /* View Profile: wired for routing later (e.g. tutor.html?id=...) */
+  /* Open the dedicated mentor profile page from the whole card or button. */
   grid.addEventListener("click", (e) => {
-    const btn = e.target.closest(".view-btn");
-    if (btn) {
-      // TODO(backend): window.location.href = "tutor.html?id=" + encodeURIComponent(tutorId);
-      console.log("Open profile:", btn.dataset.tutor);
+    const card = e.target.closest(".tutor-card");
+    if (card) {
+      window.location.href = "/mentors/" + encodeURIComponent(card.dataset.slug);
+    }
+  });
+
+  grid.addEventListener("keydown", (e) => {
+    const card = e.target.closest(".tutor-card");
+    if (card && (e.key === "Enter" || e.key === " ")) {
+      e.preventDefault();
+      window.location.href = "/mentors/" + encodeURIComponent(card.dataset.slug);
     }
   });
 
