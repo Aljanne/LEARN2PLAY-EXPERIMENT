@@ -41,6 +41,7 @@
     <main class="sessions-page">
         <a class="back-dashboard-btn sessions-back" href="{{ url_for('main.dashboard') }}">&larr; Back to dashboard</a>
 
+        <div id="studentSessionsView">
         <div class="sessions-heading">
             <div>
                 <p class="settings-eyebrow">YOUR LEARNING SCHEDULE</p>
@@ -97,6 +98,59 @@
             </div>
             <p class="sessions-empty hidden" id="sessionsEmpty">There are no sessions in this view yet.</p>
         </section>
+        </div>
+
+        <div id="mentorSessionsView" class="hidden">
+            <div class="sessions-heading">
+                <div>
+                    <p class="settings-eyebrow">MENTOR WORKSPACE</p>
+                    <h1>Session management</h1>
+                    <p>Manage learner requests, upcoming sessions, and your availability.</p>
+                </div>
+                <button class="edit-profile-btn sessions-book-btn mentor-availability-btn" type="button">Manage availability</button>
+            </div>
+
+            <section class="session-summary" aria-label="Mentor session summary">
+                <div class="session-summary-card mentor-summary-card"><span class="session-summary-label">Pending requests</span><strong>3</strong><small>need your response</small></div>
+                <div class="session-summary-card mentor-summary-card"><span class="session-summary-label">Upcoming learners</span><strong>5</strong><small>sessions this week</small></div>
+                <div class="session-summary-card mentor-summary-card"><span class="session-summary-label">This month</span><strong>₱3,250</strong><small>estimated earnings</small></div>
+            </section>
+
+            <div class="mentor-session-layout">
+                <section class="sessions-panel settings-panel" aria-labelledby="requests-heading">
+                    <div class="sessions-panel-heading">
+                        <div><h2 id="requests-heading">Booking requests</h2><p>Review and respond to learners who want to work with you.</p></div>
+                        <span class="mentor-request-count">3 new</span>
+                    </div>
+                    <div class="mentor-request-list">
+                        <article class="mentor-request-card">
+                            <div class="mentor-request-avatar">JL</div>
+                            <div class="mentor-request-details"><h3>Jamie Lee</h3><p>Mathematics &amp; Calculus</p><span>Tuesday, October 27 &bull; 10:00 AM</span></div>
+                            <div class="mentor-request-actions"><button class="session-action mentor-accept-btn" type="button">Accept</button><button class="session-action mentor-decline-btn" type="button">Decline</button></div>
+                        </article>
+                        <article class="mentor-request-card">
+                            <div class="mentor-request-avatar request-green">AR</div>
+                            <div class="mentor-request-details"><h3>Alex Rivera</h3><p>Valorant &amp; FPS Strategy</p><span>Friday, October 30 &bull; 7:30 PM</span></div>
+                            <div class="mentor-request-actions"><button class="session-action mentor-accept-btn" type="button">Accept</button><button class="session-action mentor-decline-btn" type="button">Decline</button></div>
+                        </article>
+                        <article class="mentor-request-card">
+                            <div class="mentor-request-avatar request-gold">MK</div>
+                            <div class="mentor-request-details"><h3>Mika Santos</h3><p>Study planning and exam prep</p><span>Saturday, November 1 &bull; 2:00 PM</span></div>
+                            <div class="mentor-request-actions"><button class="session-action mentor-accept-btn" type="button">Accept</button><button class="session-action mentor-decline-btn" type="button">Decline</button></div>
+                        </article>
+                    </div>
+                </section>
+
+                <section class="sessions-panel settings-panel" aria-labelledby="mentor-upcoming-heading">
+                    <div class="sessions-panel-heading"><div><h2 id="mentor-upcoming-heading">Upcoming sessions</h2><p>Your next learner appointments.</p></div></div>
+                    <div class="mentor-upcoming-list">
+                        <div class="mentor-upcoming-item"><span class="mentor-upcoming-time">10:00<br><small>AM</small></span><div><strong>Jamie Lee</strong><span>Mathematics &amp; Calculus</span></div></div>
+                        <div class="mentor-upcoming-item"><span class="mentor-upcoming-time">7:30<br><small>PM</small></span><div><strong>Alex Rivera</strong><span>Valorant &amp; FPS Strategy</span></div></div>
+                        <div class="mentor-upcoming-item"><span class="mentor-upcoming-time">2:00<br><small>PM</small></span><div><strong>Jordan Kim</strong><span>Weekly study coaching</span></div></div>
+                    </div>
+                </section>
+            </div>
+        </div>
     </main>
     <script src="{{ url_for('static', filename='js/script.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/sessions.js', v='session-tabs-2') }}" defer></script>
