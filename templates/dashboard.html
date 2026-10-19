@@ -10,7 +10,7 @@
 
   <!-- ============ Top navbar ============ -->
   <header class="topbar">
-    <a class="tb-brand" href="dashboard.html">
+    <a class="tb-brand" href="{{ url_for('main.dashboard') }}">
       <div class="logo">L2</div>
       <div class="brand-name">Learn2Play</div>
     </a>
@@ -23,7 +23,7 @@
     <div class="tb-right">
       <!-- Student-only top links -->
       <nav class="tb-nav" data-show-for="student">
-        <a href="dashboard.html" class="active">Home</a>
+        <a href="{{ url_for('main.dashboard') }}" class="active">Home</a>
         <a href="#" data-nav="academic">Academic Tutors</a>
         <a href="#" data-nav="gaming">Gaming Coaches</a>
         <a href="{{ url_for('main.sessions') }}">My Bookings</a>
@@ -75,7 +75,7 @@
 
       <!-- Every mode: links to the other pages -->
       <div class="side-label">Menu</div>
-      <a class="side-item active" href="dashboard.html" aria-current="page">Dashboard</a>
+      <a class="side-item active" href="{{ url_for('main.dashboard') }}" aria-current="page">Dashboard</a>
       <a class="side-item" href="{{ url_for('main.sessions') }}">Sessions</a>
       <a class="side-item" href="messages.html">Messages</a>
       <a class="side-item" href="{{ url_for('main.settings') }}">Settings</a>

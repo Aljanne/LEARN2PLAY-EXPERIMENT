@@ -312,32 +312,32 @@ window.L2 = { user, getMode: () => activeMode, setMode };
   const TUTORS = [
     {
       slug: "sophia-reyes", name: "Sophia Reyes", subject: "Mathematics & Calculus",
-      rating: 4.9, reviews: 143, price: 35, category: "academic", variant: 0,
+      rating: 4.9, reviews: 143, price: 550, category: "academic", variant: 0,
       desc: "PhD candidate at MIT specializing in applied mathematics. I help students master calculus, linear algebra and exam strategy."
     },
     {
       slug: "marcus-chen", name: "Marcus Chen", subject: "Valorant & FPS Strategy",
-      rating: 4.8, reviews: 211, price: 40, category: "gaming", variant: 1,
+      rating: 4.8, reviews: 211, price: 650, category: "gaming", variant: 1,
       desc: "Former pro Valorant player (Radiant rank). I coach players from Silver to Immortal on positioning, aim and team play."
     },
     {
       slug: "amara-osei", name: "Amara Osei", subject: "Chemistry & Biology",
-      rating: 4.7, reviews: 98, price: 30, category: "academic", variant: 2,
+      rating: 4.7, reviews: 98, price: 450, category: "academic", variant: 2,
       desc: "Pre-med student & STEM tutor with a passion for making science accessible. Specializing in organic chemistry and cell biology."
     },
     {
       slug: "kai-nakamura", name: "Kai Nakamura", subject: "League of Legends",
-      rating: 4.9, reviews: 175, price: 45, category: "gaming", variant: 3,
+      rating: 4.9, reviews: 175, price: 750, category: "gaming", variant: 3,
       desc: "Grandmaster LoL player with 6 years of competitive play. I help mid to high-elo players climb with VOD reviews and macro coaching."
     },
     {
       slug: "elena-vasquez", name: "Elena Vasquez", subject: "English & Essay Writing",
-      rating: 4.6, reviews: 67, price: 28, category: "academic", variant: 4,
+      rating: 4.6, reviews: 67, price: 400, category: "academic", variant: 4,
       desc: "English Literature MA graduate with 4 years of tutoring experience. I specialize in college essay writing and critical reading."
     },
     {
       slug: "darius-bell", name: "Darius Bell", subject: "Apex Legends & Battle Royale",
-      rating: 4.7, reviews: 132, price: 38, category: "gaming", variant: 5,
+      rating: 4.7, reviews: 132, price: 600, category: "gaming", variant: 5,
       desc: "Masters-rank Apex Legends player with 5000+ hours. I coach on movement, rotations, loot routes and endgame decisions."
     }
   ];
@@ -433,7 +433,7 @@ if(editBtn){
 
     // Text fields go through esc() because they will come from the database later.
     return (
-      '<article class="tutor-card" data-slug="' + esc(t.slug) + '" tabindex="0" role="link" aria-label="View profile for ' + esc(t.name) + '">' +
+      '<article class="tutor-card" data-slug="' + esc(t.slug) + '" data-search="' + esc((t.name + " " + t.subject + " " + t.desc).toLowerCase()) + '" tabindex="0" role="link" aria-label="View profile for ' + esc(t.name) + '">' +
         '<div class="card-media">' + media + badge +
           '<div class="card-avatar" style="background:linear-gradient(135deg,' + grad[0] + "," + grad[1] + ')">' +
             esc(initialsOf(t.name)) +
@@ -447,7 +447,7 @@ if(editBtn){
             '<span class="reviews">(' + esc(t.reviews) + " reviews)</span></div>" +
           '<p class="card-desc">' + esc(t.desc) + "</p>" +
           '<div class="card-footer">' +
-            '<span class="price-lg">$' + esc(t.price) + "/hr</span>" +
+            '<span class="price-lg">₱' + esc(t.price) + "/hr</span>" +
             '<button class="view-btn" type="button" data-slug="' + esc(t.slug) + '" data-tutor="' + esc(t.name) + '">View Profile &rarr;</button>' +
           "</div>" +
         "</div>" +
@@ -459,48 +459,68 @@ if(editBtn){
   const state = { category: "all", query: "" };
   const emptyState  = document.getElementById("emptyState");
   const searchInput = document.getElementById("searchInput");
-  let renderTimer = null;
 
-  function render({ immediate = false } = {}) {
+  function applySearchFilter() {
     const q = state.query.toLowerCase();
+    const cards = grid.querySelectorAll(".tutor-card");
+    let visibleCount = 0;
+
+    cards.forEach((card) => {
+      const matches = !q || card.dataset.search.includes(q);
+      card.hidden = false;
+      card.setAttribute("aria-hidden", String(!matches));
+
+      if (matches) {
+        card.classList.remove("search-result-hidden");
+        visibleCount += 1;
+        return;
+      }
+
+      card.classList.add("search-result-hidden");
+      window.setTimeout(() => {
+        if (card.classList.contains("search-result-hidden")) card.hidden = true;
+      }, 180);
+    });
+
+    if (emptyState) {
+      const hasResults = visibleCount > 0;
+      emptyState.classList.toggle("hidden", hasResults);
+      if (!hasResults) {
+        emptyState.classList.remove("search-empty-enter");
+        requestAnimationFrame(() => emptyState.classList.add("search-empty-enter"));
+      }
+    }
+  }
+
+  function render() {
     const list = TUTORS.filter((t) => {
       if (state.category !== "all" && t.category !== state.category) return false;
-      if (q && (t.name + " " + t.subject + " " + t.desc).toLowerCase().indexOf(q) < 0) return false;
       return true;
     });
-    const paintResults = () => {
-      grid.innerHTML = list.map(cardHTML).join("");
-      grid.classList.remove("search-results-exiting");
-      grid.querySelectorAll(".tutor-card").forEach((card, index) => {
-        card.style.setProperty("--result-delay", `${Math.min(index, 5) * 70}ms`);
-        card.classList.add("search-result-enter");
-      });
-
-      if (emptyState) {
-        const hasResults = list.length > 0;
-        emptyState.classList.toggle("hidden", hasResults);
-        if (!hasResults) {
-          emptyState.classList.remove("search-empty-enter");
-          requestAnimationFrame(() => emptyState.classList.add("search-empty-enter"));
-        }
-      }
-    };
-
-    clearTimeout(renderTimer);
-    if (!immediate && grid.children.length > 0) {
-      grid.classList.add("search-results-exiting");
-      renderTimer = setTimeout(paintResults, 180);
-    } else {
-      paintResults();
-    }
+    grid.innerHTML = list.map(cardHTML).join("");
+    grid.querySelectorAll(".tutor-card").forEach((card, index) => {
+      card.style.setProperty("--result-delay", `${Math.min(index, 5) * 70}ms`);
+      card.classList.add("search-result-enter");
+    });
+    applySearchFilter();
   }
 
   function setCategory(cat) {
     state.category = cat;
     document.querySelectorAll(".side-item[data-cat]").forEach((b) => {
       b.classList.toggle("active", b.dataset.cat === cat);
+      if (b.dataset.cat === cat) {
+        b.classList.remove("filter-press");
+        void b.offsetWidth;
+        b.classList.add("filter-press");
+        window.setTimeout(() => b.classList.remove("filter-press"), 300);
+      }
     });
-    render({ immediate: true });
+
+    grid.classList.remove("category-switching");
+    void grid.offsetWidth;
+    grid.classList.add("category-switching");
+    render();
   }
 
   /* sidebar: category buttons */
@@ -520,7 +540,7 @@ if(editBtn){
   if (searchInput) {
     searchInput.addEventListener("input", () => {
       state.query = searchInput.value.trim();
-      render();
+      applySearchFilter();
     });
   }
 

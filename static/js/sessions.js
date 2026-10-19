@@ -4,11 +4,45 @@
     const tabs = document.querySelectorAll(".session-tab");
     const sessions = document.querySelectorAll(".scheduled-session");
     const empty = document.getElementById("sessionsEmpty");
+    const sessionList = document.getElementById("sessionList");
+    let switchTimer = null;
+
+    function showSessions(status, animate = true) {
+        const updateList = () => {
+            let visibleCount = 0;
+
+            sessions.forEach(session => {
+                const isVisible = session.dataset.status === status;
+                session.hidden = !isVisible;
+                session.setAttribute("aria-hidden", String(!isVisible));
+                session.classList.remove("session-switch-enter");
+                if (isVisible) visibleCount += 1;
+            });
+
+            if (empty) empty.classList.toggle("hidden", visibleCount > 0);
+
+            if (animate && sessionList) {
+                requestAnimationFrame(() => {
+                    sessionList.classList.remove("session-list-leaving");
+                    sessions.forEach(session => {
+                        if (!session.hidden) session.classList.add("session-switch-enter");
+                    });
+                });
+            }
+        };
+
+        clearTimeout(switchTimer);
+        if (animate && sessionList) {
+            sessionList.classList.add("session-list-leaving");
+            switchTimer = setTimeout(updateList, 160);
+        } else {
+            updateList();
+        }
+    }
 
     tabs.forEach(tab => {
         tab.addEventListener("click", () => {
             const status = tab.dataset.status;
-            let visibleCount = 0;
 
             tabs.forEach(item => {
                 const isActive = item === tab;
@@ -16,14 +50,7 @@
                 item.setAttribute("aria-selected", String(isActive));
             });
 
-            sessions.forEach(session => {
-                const isVisible = session.dataset.status === status;
-                session.hidden = !isVisible;
-                session.setAttribute("aria-hidden", String(!isVisible));
-                if (isVisible) visibleCount += 1;
-            });
-
-            empty.classList.toggle("hidden", visibleCount > 0);
+            showSessions(status);
         });
     });
 
@@ -54,5 +81,6 @@
 
     // Apply the default Upcoming filter on first load so completed sessions
     // remain visible only inside the Past sessions tab.
-    document.querySelector(".session-tab.active")?.click();
+    const initialTab = document.querySelector(".session-tab.active");
+    if (initialTab) showSessions(initialTab.dataset.status, false);
 })();

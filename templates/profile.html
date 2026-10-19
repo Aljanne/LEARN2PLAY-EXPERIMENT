@@ -11,7 +11,7 @@
 
     <!-- Top Navbar -->
     <header class="topbar">
-        <a class="tb-brand" href="dashboard.html">
+        <a class="tb-brand" href="{{ url_for('main.dashboard') }}">
             <div class="logo">L2</div>
             <div class="brand-name">Learn2Play</div>
         </a>
@@ -154,7 +154,7 @@
                         📅 My Bookings
                     </a>
 
-                    <a href="dashboard.html" class="quick-link">
+                    <a href="{{ url_for('main.dashboard') }}" class="quick-link">
                         🔍 Browse
                     </a>
                 </div>

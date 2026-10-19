@@ -15,9 +15,26 @@
         <nav class="settings-nav" aria-label="Main navigation">
             <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
             <a href="{{ url_for('main.sessions') }}">My sessions</a>
-            <a href="{{ url_for('main.profile') }}">Profile</a>
         </nav>
         <a class="settings-help-link" href="{{ url_for('main.help') }}">Help &amp; support</a>
+        <div class="tb-profile" id="profileMenu">
+            <button class="tb-avatar" id="userAvatar" type="button"
+                    aria-haspopup="menu" aria-expanded="false" aria-controls="profileDropdown"
+                    aria-label="Open account menu">JD</button>
+            <div class="dropdown hidden" id="profileDropdown" role="menu">
+                <div class="dd-header">
+                    <div class="dd-name" id="menuName">Juan Dela Cruz</div>
+                    <div class="dd-email" id="menuEmail">juan@example.com</div>
+                    <div class="dd-roles" id="menuRoles"></div>
+                </div>
+                <a class="dd-item" role="menuitem" href="{{ url_for('main.profile') }}">View profile</a>
+                <a class="dd-item" role="menuitem" href="{{ url_for('main.sessions') }}">My sessions</a>
+                <a class="dd-item" role="menuitem" href="{{ url_for('main.settings') }}">Settings</a>
+                <a class="dd-item" role="menuitem" href="{{ url_for('main.help') }}">Help &amp; support</a>
+                <div class="dd-sep"></div>
+                <a class="dd-item danger" role="menuitem" href="{{ url_for('main.auth_page') }}" id="logoutBtn">Log out</a>
+            </div>
+        </div>
     </header>
 
     <main class="mentor-profile-page">
@@ -37,7 +54,7 @@
             </div>
             <div class="mentor-profile-booking">
                 <span>Starting at</span>
-                <strong>${{ mentor.price }}<small>/hr</small></strong>
+                <strong>₱{{ mentor.price }}<small>/hr</small></strong>
                 <button class="edit-profile-btn" type="button" onclick="alert('Booking will be available soon.')">Book a session</button>
             </div>
         </section>
@@ -71,12 +88,13 @@
             <aside class="mentor-profile-sidebar">
                 <section class="settings-panel mentor-profile-card">
                     <h2>Session details</h2>
-                    <div class="mentor-detail-row"><span>Rate</span><strong>${{ mentor.price }}/hr</strong></div>
+                    <div class="mentor-detail-row"><span>Rate</span><strong>₱{{ mentor.price }}/hr</strong></div>
                     <div class="mentor-detail-row"><span>Experience</span><strong>{{ mentor.experience }}</strong></div>
                     <div class="mentor-detail-row"><span>Response time</span><strong>{{ mentor.response_time }}</strong></div>
                 </section>
             </aside>
         </div>
     </main>
+    <script src="{{ url_for('static', filename='js/script.js') }}" defer></script>
 </body>
 </html>

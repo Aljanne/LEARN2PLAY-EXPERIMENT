@@ -434,6 +434,12 @@ body.dashboard {
 }
 .side-item:hover { background: var(--card); color: var(--txt); }
 .side-item.active { background: var(--card); color: var(--txt); box-shadow: inset 2px 0 0 var(--purple); }
+.side-item.filter-press { animation: filter-press .3s ease; }
+@keyframes filter-press {
+  0% { transform: scale(1); }
+  45% { transform: scale(.96); }
+  100% { transform: scale(1); }
+}
 
 .side-cta {
   margin-top: 24px;
@@ -481,14 +487,24 @@ body.dashboard {
   outline: 2px solid var(--lavender);
   outline-offset: 3px;
 }
-.grid.search-results-exiting .tutor-card {
+.tutor-card.search-result-hidden {
   opacity: 0;
-  transform: translateY(8px);
+  transform: translateY(6px);
   transition: opacity 0.18s ease, transform 0.18s ease;
 }
 .search-result-enter {
   animation: search-result-enter 0.48s ease both;
   animation-delay: var(--result-delay, 0ms);
+}
+.category-switching .tutor-card {
+  animation-name: category-card-enter;
+  animation-duration: .38s;
+  animation-timing-function: ease;
+  animation-fill-mode: both;
+}
+@keyframes category-card-enter {
+  from { opacity: 0; transform: translateY(12px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 @keyframes search-result-enter {
   from { opacity: 0; transform: translateY(8px); }
@@ -574,7 +590,7 @@ body.dashboard {
   to { opacity: 1; transform: translateY(0); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .search-result-enter, .search-empty-enter { animation: none; }
+  .search-result-enter, .search-empty-enter, .filter-press, .category-switching .tutor-card { animation: none; }
 }
 
 /* ---------- role picker ---------- */
@@ -781,10 +797,17 @@ a.side-item { text-decoration: none; }
 .sessions-panel-heading h2 { color: var(--txt); font-size: 18px; }
 .sessions-panel-heading p { color: var(--txt3); font-size: 13px; margin-top: 5px; }
 .session-tabs { display: flex; gap: 5px; padding: 4px; background: var(--bg); border: 1px solid var(--line); border-radius: 9px; }
-.session-tab { color: var(--txt3); border-radius: 6px; padding: 8px 11px; font-size: 12px; }
+.session-tab { color: var(--txt3); border-radius: 6px; padding: 8px 11px; font-size: 12px; transition: color .18s, background .18s, box-shadow .18s; }
 .session-tab:hover { color: var(--txt); }
 .session-tab.active { color: var(--txt); background: var(--card); box-shadow: 0 2px 7px rgba(0,0,0,.18); }
 .session-list { display: grid; gap: 12px; margin-top: 16px; }
+.session-list { transition: opacity .16s ease, transform .16s ease; }
+.session-list-leaving { opacity: 0; transform: translateY(7px); }
+.session-switch-enter { animation: session-switch-enter .3s ease both; }
+@keyframes session-switch-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 .scheduled-session { display: grid; grid-template-columns: 58px minmax(0, 1fr) auto; align-items: center; gap: 16px; border: 1px solid var(--line); border-radius: 11px; padding: 15px; transition: border-color .18s, transform .18s; }
 .scheduled-session[hidden] { display: none; }
 .scheduled-session:hover { border-color: rgba(124,108,245,.5); transform: translateY(-1px); }
@@ -808,6 +831,9 @@ a.side-item { text-decoration: none; }
 .cancel-session-action { color: var(--danger); border-color: rgba(248,113,113,.35); }
 .cancel-session-action:hover { color: #fff; background: var(--danger); border-color: var(--danger); }
 .sessions-empty { color: var(--txt3); text-align: center; padding: 42px 0 22px; font-size: 13px; }
+@media (prefers-reduced-motion: reduce) {
+  .session-list, .session-switch-enter { transition: none; animation: none; }
+}
 
 @media (max-width: 700px) {
   .settings-topbar { gap: 12px; }
