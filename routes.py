@@ -196,7 +196,9 @@ def check_upload(file):
 # ---------- Static & Auth Pages ----------
 @main.route("/")
 def home():
-    return redirect(url_for("main.auth_page"))
+    if current_user.is_authenticated:
+        return redirect(url_for("main.dashboard"))
+    return render_template("landing.html")
 
 
 @main.route("/auth")

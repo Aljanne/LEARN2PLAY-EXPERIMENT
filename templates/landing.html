@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Find an academic tutor or gaming coach and level up with Learn2Play.">
+  <title>Learn2Play — Level Up Your Studies, Level Up Your Game</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body class="landing-page">
+  <header class="landing-header">
+    <a class="landing-brand" href="{{ url_for('main.home') }}" aria-label="Learn2Play home">
+      <span class="logo">L2</span><span>Learn2Play</span>
+    </a>
+    <nav class="landing-nav" aria-label="Main navigation">
+      <a href="#home">Home</a>
+      <a href="#about">About</a>
+      <a href="#how-it-works">How it works</a>
+    </nav>
+    <div class="landing-actions">
+      <a class="landing-login" href="{{ url_for('main.auth_page') }}">Log in</a>
+      <a class="landing-button landing-button-small" href="{{ url_for('main.register_page') }}">Sign up</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="landing-hero" id="home">
+      <div class="landing-hero-copy">
+        <span class="landing-eyebrow"><span></span> Learn smarter. Play stronger.</span>
+        <h1>Level Up Your Studies,<br><em>Level Up Your Game.</em></h1>
+        <p>Find the right academic tutor or gaming coach, book a one-on-one session, and build skills that move you forward.</p>
+        <div class="landing-hero-actions">
+          <a class="landing-button" href="{{ url_for('main.register_page') }}">Get started <span aria-hidden="true">→</span></a>
+          <a class="landing-button landing-button-secondary" href="{{ url_for('main.auth_page') }}">Log in</a>
+        </div>
+        <div class="landing-trust-note"><span aria-hidden="true">✦</span> One place for learning and gaming goals</div>
+      </div>
+
+      <div class="landing-visual" aria-label="Academic tutoring and game coaching" role="img">
+        <div class="landing-visual-glow"></div>
+        <div class="landing-orbit landing-orbit-one"></div>
+        <div class="landing-orbit landing-orbit-two"></div>
+        <div class="landing-visual-center"><span class="landing-cap" aria-hidden="true">✦</span><span class="landing-controller" aria-hidden="true">⌘</span></div>
+        <div class="landing-float-card landing-float-study"><span class="landing-float-icon study-icon" aria-hidden="true">✎</span><span><b>Study session</b><small>Find your next tutor</small></span></div>
+        <div class="landing-float-card landing-float-game"><span class="landing-float-icon game-icon" aria-hidden="true">⌘</span><span><b>Game coaching</b><small>Practice with a pro</small></span></div>
+        <div class="landing-visual-label">Your next level starts here</div>
+      </div>
+    </section>
+
+    <section class="landing-section" id="how-it-works">
+      <div class="landing-section-heading">
+        <span class="landing-eyebrow">A simple path forward</span>
+        <h2>How Learn2Play works</h2>
+        <p>Getting support for your next goal is easy.</p>
+      </div>
+      <div class="landing-steps">
+        <article class="landing-step"><span class="landing-step-number">01</span><span class="landing-step-icon" aria-hidden="true">⌕</span><h3>Find your guide</h3><p>Explore academic tutors and gaming coaches who match what you want to learn.</p></article>
+        <article class="landing-step"><span class="landing-step-number">02</span><span class="landing-step-icon" aria-hidden="true">▦</span><h3>Book a session</h3><p>Choose a schedule that works for you and set up a one-on-one session.</p></article>
+        <article class="landing-step"><span class="landing-step-number">03</span><span class="landing-step-icon" aria-hidden="true">↗</span><h3>Level up</h3><p>Practice, learn from feedback, and keep building your skills over time.</p></article>
+      </div>
+    </section>
+
+    <section class="landing-section landing-features-section" aria-labelledby="landing-features-title">
+      <div class="landing-section-heading">
+        <span class="landing-eyebrow">Built around your goals</span>
+        <h2 id="landing-features-title">More ways to make progress</h2>
+      </div>
+      <div class="landing-features">
+        <article class="landing-feature"><span aria-hidden="true">◷</span><h3>Flexible scheduling</h3><p>Find session times that fit around school, practice, and everything else.</p></article>
+        <article class="landing-feature"><span aria-hidden="true">◎</span><h3>Easy booking</h3><p>Discover a guide and arrange your session in one place.</p></article>
+        <article class="landing-feature"><span aria-hidden="true">✧</span><h3>Learn your way</h3><p>Connect with academic tutors or gaming coaches for focused support.</p></article>
+        <article class="landing-feature"><span aria-hidden="true">↗</span><h3>Keep improving</h3><p>Build confidence and develop useful skills one session at a time.</p></article>
+      </div>
+    </section>
+
+    <section class="landing-about" id="about">
+      <div class="landing-about-mark" aria-hidden="true"><span>Learn</span><b>+</b><span>Play</span></div>
+      <div><span class="landing-eyebrow">About Learn2Play</span><h2>Two passions. One place to grow.</h2><p>Learn2Play brings learning and gaming together, helping students connect with tutors and coaches who can support their goals—whether that means mastering a subject or sharpening their play.</p></div>
+      <a class="landing-about-link" href="{{ url_for('main.register_page') }}">Find your next step <span aria-hidden="true">→</span></a>
+    </section>
+  </main>
+
+  <footer class="landing-footer">
+    <a class="landing-brand" href="{{ url_for('main.home') }}"><span class="logo">L2</span><span>Learn2Play</span></a>
+    <p>Level Up Your Studies, Level Up Your Game.</p>
+    <nav aria-label="Footer navigation"><a href="#home">Home</a><a href="#about">About</a><a href="#how-it-works">How it works</a><a href="{{ url_for('main.auth_page') }}">Log in</a></nav>
+  </footer>
+</body>
+</html>
