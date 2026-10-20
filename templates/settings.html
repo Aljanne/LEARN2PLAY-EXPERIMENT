@@ -3,32 +3,494 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings</title>
+    <title>Account Settings | Learn2Play</title>
 
-    <style>
-        body{
-            font-family: Arial, sans-serif;
-            background:#f4f4f4;
-            display:flex;
-            justify-content:center;
-            align-items:center;
-            height:100vh;
-        }
-
-        .container{
-            text-align:center;
-            background:white;
-            padding:40px;
-            border-radius:10px;
-            box-shadow:0 0 10px rgba(0,0,0,.1);
-        }
-    </style>
+    <!-- Main stylesheet with our settings additions -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
-<body>
-    <div class="container">
-        <h1>⚙ Settings</h1>
-        <p>Settings page is currently under development.</p>
-        dashboard.htmlReturn Home</a>
+
+<body class="dashboard settings-body">
+    <!-- Top Navigation Bar -->
+    <header class="topbar">
+        <a class="tb-brand" href="{{ url_for('main.dashboard') }}" aria-label="Learn2Play Dashboard">
+            <div class="logo">L2</div>
+            <span class="brand-name">Learn2Play</span>
+        </a>
+
+        <nav class="tb-nav" aria-label="Main navigation">
+            <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('main.sessions') }}">My Sessions</a>
+            <a href="{{ url_for('main.profile') }}">Profile</a>
+            <a href="{{ url_for('main.settings') }}" class="active">Settings</a>
+        </nav>
+
+        <div class="tb-right">
+            <a class="settings-help-link" href="{{ url_for('main.help') }}">Help &amp; Support</a>
+            <a href="{{ url_for('main.profile') }}" class="tb-avatar" id="topbarAvatar" title="My Profile">
+                {{ current_user.display_name[:1] | upper if current_user and current_user.display_name else 'U' }}
+            </a>
+        </div>
+    </header>
+
+    <!-- Settings Main Layout -->
+    <div class="settings-container">
+        <!-- Sidebar Navigation -->
+        <aside class="settings-sidebar">
+            <a class="settings-back-btn" href="{{ url_for('main.dashboard') }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                Back to dashboard
+            </a>
+
+            <div class="settings-nav-group">
+                <span class="settings-nav-heading">ACCOUNT</span>
+                <nav class="settings-nav-tabs" role="tablist">
+                    <button class="settings-tab-btn active" role="tab" data-tab="account-details" aria-selected="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        <span>Account details</span>
+                    </button>
+                    <button class="settings-tab-btn" role="tab" data-tab="security" aria-selected="false">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                        <span>Password &amp; security</span>
+                    </button>
+                    <button class="settings-tab-btn" role="tab" data-tab="roles" aria-selected="false">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                        <span>Roles &amp; access</span>
+                    </button>
+                    <button class="settings-tab-btn" role="tab" data-tab="notifications" aria-selected="false">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                        <span>Notifications</span>
+                    </button>
+                    <button class="settings-tab-btn" role="tab" data-tab="danger-zone" aria-selected="false">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                        <span>Preferences &amp; data</span>
+                    </button>
+                </nav>
+            </div>
+
+            <div class="settings-sidebar-badge">
+                <div class="sidebar-badge-dot"></div>
+                <p>Changes you save here sync across your entire Learn2Play account.</p>
+            </div>
+        </aside>
+
+        <!-- Content Area -->
+        <main class="settings-content">
+            <!-- Header Banner -->
+            <div class="settings-header">
+                <div class="settings-header-text">
+                    <span class="settings-badge-pill">PREFERENCES &amp; SECURITY</span>
+                    <h1>Account Settings</h1>
+                    <p>Manage your personal profile, authentication methods, active roles, and alert settings.</p>
+                </div>
+            </div>
+
+            <!-- Profile Summary Card -->
+            <section class="settings-overview-card">
+                <div class="settings-avatar-wrap">
+                    <div class="settings-avatar-circle" id="settingsAvatar" aria-hidden="true">
+                        {{ current_user.display_name[:2] | upper if current_user and current_user.display_name else 'U' }}
+                    </div>
+                </div>
+
+                <div class="settings-overview-info">
+                    <div class="settings-title-row">
+                        <h2 id="settingsName">{{ current_user.display_name if current_user else 'Account User' }}</h2>
+                        <span class="status-indicator">Verified User</span>
+                    </div>
+                    <p id="settingsEmail">{{ current_user.email if current_user else 'user@learn2play.com' }}</p>
+                    <div class="settings-roles-list" id="settingsRoles">
+                        {% if current_user and current_user.roles %}
+                            {% for role in current_user.roles %}
+                                <span class="pill {{ 'g' if role == 'coach' else 'a' }}">
+                                    {{ "Teacher" if role == "mentor" else (role | title) }}
+                                </span>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+
+                <a class="settings-profile-link" href="{{ url_for('main.profile') }}">
+                    Public Profile
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                </a>
+            </section>
+
+            <!-- TAB 1: Account Details -->
+            <div class="settings-tab-panel active" id="tab-account-details" role="tabpanel">
+                <div class="settings-panel">
+                    <div class="panel-header">
+                        <div>
+                            <h2>Personal Information</h2>
+                            <p>Update the name and personal details attached to your account.</p>
+                        </div>
+                        <span class="panel-category-tag">PROFILE</span>
+                    </div>
+
+                    <form id="profileInformationForm" class="settings-form">
+                        <div class="form-grid-2">
+                            <label class="settings-input-group">
+                                <span class="input-label">First name <em class="req">*</em></span>
+                                <input
+                                    type="text"
+                                    id="settingsFirstName"
+                                    name="first_name"
+                                    autocomplete="given-name"
+                                    placeholder="Enter first name"
+                                    maxlength="80"
+                                    required
+                                >
+                            </label>
+
+                            <label class="settings-input-group">
+                                <span class="input-label">Last name</span>
+                                <input
+                                    type="text"
+                                    id="settingsLastName"
+                                    name="last_name"
+                                    autocomplete="family-name"
+                                    placeholder="Enter last name"
+                                    maxlength="80"
+                                >
+                            </label>
+                        </div>
+
+                        <label class="settings-input-group">
+                            <span class="input-label">Email address</span>
+                            <div class="input-addon-wrap">
+                                <input
+                                    type="email"
+                                    id="settingsProfileEmail"
+                                    value="{{ current_user.email if current_user else '' }}"
+                                    autocomplete="email"
+                                    readonly
+                                >
+                                <span class="badge-locked">Read-only</span>
+                            </div>
+                            <small class="input-hint">Your email is tied to authentication and cannot be changed directly here. Contact support to update it.</small>
+                        </label>
+
+                        <div class="settings-callout-box">
+                            <svg class="callout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                            <div class="callout-text">
+                                <strong>Need to update your public avatar or bio?</strong>
+                                <p>Manage your public teaching bio, gaming specialties, and picture directly in your <a href="{{ url_for('main.profile') }}">Profile Page</a>.</p>
+                            </div>
+                        </div>
+
+                        <div class="panel-footer">
+                            <div class="form-feedback-msg" id="profileInformationMessage" role="status" aria-live="polite"></div>
+                            <button class="primary settings-submit-btn" type="submit" id="profileInformationSave">
+                                Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- TAB 2: Password & Security -->
+            <div class="settings-tab-panel" id="tab-security" role="tabpanel">
+                <div class="settings-panel">
+                    <div class="panel-header">
+                        <div>
+                            <h2>Password &amp; Authentication</h2>
+                            <p>Ensure your account is protected with a strong, distinct password.</p>
+                        </div>
+                        <span class="panel-category-tag">SECURITY</span>
+                    </div>
+
+                    <form id="passwordForm" class="settings-form">
+                        <label class="settings-input-group">
+                            <span class="input-label">Current password <em class="req">*</em></span>
+                            <div class="input-wrap">
+                                <input
+                                    type="password"
+                                    id="currentPassword"
+                                    name="current_password"
+                                    autocomplete="current-password"
+                                    placeholder="••••••••••••"
+                                    required
+                                >
+                                <button type="button" class="eye password-toggle-btn" aria-label="Toggle password visibility">
+                                    <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                </button>
+                            </div>
+                        </label>
+
+                        <div class="form-grid-2">
+                            <label class="settings-input-group">
+                                <span class="input-label">New password <em class="req">*</em></span>
+                                <div class="input-wrap">
+                                    <input
+                                        type="password"
+                                        id="newPassword"
+                                        name="new_password"
+                                        minlength="8"
+                                        autocomplete="new-password"
+                                        placeholder="Min. 8 characters"
+                                        required
+                                    >
+                                    <button type="button" class="eye password-toggle-btn" aria-label="Toggle password visibility">
+                                        <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                    </button>
+                                </div>
+                                <div class="strength" id="passwordStrengthMeter" data-level="0">
+                                    <i></i><i></i><i></i><i></i>
+                                </div>
+                            </label>
+
+                            <label class="settings-input-group">
+                                <span class="input-label">Confirm new password <em class="req">*</em></span>
+                                <div class="input-wrap">
+                                    <input
+                                        type="password"
+                                        id="confirmPassword"
+                                        name="confirm_password"
+                                        minlength="8"
+                                        autocomplete="new-password"
+                                        placeholder="Repeat new password"
+                                        required
+                                    >
+                                    <button type="button" class="eye password-toggle-btn" aria-label="Toggle password visibility">
+                                        <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                    </button>
+                                </div>
+                            </label>
+                        </div>
+
+                        <div class="password-rules-card">
+                            <span class="rules-title">Password must include:</span>
+                            <ul class="rules-list">
+                                <li id="rule-length">At least 8 characters</li>
+                                <li id="rule-upper">An uppercase letter</li>
+                                <li id="rule-lower">A lowercase letter</li>
+                                <li id="rule-number">At least one number or symbol</li>
+                            </ul>
+                        </div>
+
+                        <div class="panel-footer">
+                            <div class="form-feedback-msg" id="passwordMessage" role="status" aria-live="polite"></div>
+                            <button class="primary settings-submit-btn" type="submit" id="passwordSave">
+                                Update Password
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 2FA Section -->
+                <div class="settings-panel" style="margin-top: 20px;">
+                    <div class="panel-header">
+                        <div>
+                            <h2>Two-Factor Authentication (2FA)</h2>
+                            <p>Add an extra layer of protection requiring an authenticator code when signing in.</p>
+                        </div>
+                        <span class="pill a">Recommended</span>
+                    </div>
+
+                    <div class="preference-toggle-item">
+                        <div class="toggle-text">
+                            <strong>Require Two-Factor Verification</strong>
+                            <p>Protect your sessions and payouts from unauthorized logins.</p>
+                        </div>
+                        <label class="switch-toggle" aria-label="Toggle Two-factor authentication">
+                            <input type="checkbox" class="settings-toggle-input" data-preference="twoFactor">
+                            <span class="switch-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: Roles & Access -->
+            <div class="settings-tab-panel" id="tab-roles" role="tabpanel">
+                <div class="settings-panel">
+                    <div class="panel-header">
+                        <div>
+                            <h2>Roles &amp; Platform Access</h2>
+                            <p>Your single account lets you learn, teach, and coach across Learn2Play.</p>
+                        </div>
+                        <span class="panel-category-tag">MEMBERSHIP</span>
+                    </div>
+
+                    {% set active_roles = current_user.roles if current_user and current_user.roles else [] %}
+
+                    <div class="role-management-list">
+                        <!-- Student Role -->
+                        <div class="role-status-card">
+                            <div class="role-icon-avatar role-student-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                            </div>
+                            <div class="role-info">
+                                <h3>Student Learner</h3>
+                                <p>Book tutoring sessions, join gaming workshops, and track your learning progress.</p>
+                            </div>
+                            <span class="role-badge {{ 'active' if 'student' in active_roles else 'inactive' }}">
+                                {{ "Active" if "student" in active_roles else "Not Active" }}
+                            </span>
+                        </div>
+
+                        <!-- Teacher Role -->
+                        <div class="role-status-card">
+                            <div class="role-icon-avatar role-mentor-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                            </div>
+                            <div class="role-info">
+                                <h3>Academic Teacher</h3>
+                                <p>Teach STEM, humanities, and languages. Verified after credentials check.</p>
+                            </div>
+                            <span class="role-badge {{ 'active' if 'mentor' in active_roles else 'inactive' }}">
+                                {{ "Active" if "mentor" in active_roles else "Not Active" }}
+                            </span>
+                        </div>
+
+                        <!-- Coach Role -->
+                        <div class="role-status-card">
+                            <div class="role-icon-avatar role-coach-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="6" cy="12" r="1"></circle><circle cx="10" cy="12" r="1"></circle><circle cx="14" cy="12" r="1"></circle><circle cx="18" cy="12" r="1"></circle></svg>
+                            </div>
+                            <div class="role-info">
+                                <h3>Gaming Coach</h3>
+                                <p>Conduct 1-on-1 and team coaching for competitive esports and gaming titles.</p>
+                            </div>
+                            <span class="role-badge {{ 'active' if 'coach' in active_roles else 'inactive' }}">
+                                {{ "Active" if "coach" in active_roles else "Not Active" }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="settings-callout-box" style="margin-top: 24px;">
+                        <svg class="callout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                        <div class="callout-text">
+                            <strong>Want to become a Teacher or Coach?</strong>
+                            <p>You can apply for educator certification anytime. Once reviewed by our team, your specialized teaching tools unlock automatically.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: Notifications & Preferences -->
+            <div class="settings-tab-panel" id="tab-notifications" role="tabpanel">
+                <div class="settings-panel">
+                    <div class="panel-header">
+                        <div>
+                            <h2>Notification Preferences</h2>
+                            <p>Choose what alerts and announcements you receive from Learn2Play.</p>
+                        </div>
+                        <span class="panel-category-tag">ALERTS</span>
+                    </div>
+
+                    <div class="preferences-group">
+                        <div class="preference-toggle-item">
+                            <div class="toggle-text">
+                                <strong>Session Booking Reminders</strong>
+                                <p>Receive calendar updates and email alerts 1 hour before scheduled sessions.</p>
+                            </div>
+                            <label class="switch-toggle" aria-label="Toggle booking reminders">
+                                <input type="checkbox" class="settings-toggle-input" data-preference="bookingReminders" checked>
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="preference-toggle-item">
+                            <div class="toggle-text">
+                                <strong>Account &amp; Security Alerts</strong>
+                                <p>Crucial notices about new sign-ins, password updates, and payout requests.</p>
+                            </div>
+                            <label class="switch-toggle" aria-label="Toggle security alerts">
+                                <input type="checkbox" class="settings-toggle-input" data-preference="emailNotifications" checked>
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="preference-toggle-item">
+                            <div class="toggle-text">
+                                <strong>Platform News &amp; Learning Tips</strong>
+                                <p>Periodic updates on top coaches, new courses, and community tournaments.</p>
+                            </div>
+                            <label class="switch-toggle" aria-label="Toggle marketing offers">
+                                <input type="checkbox" class="settings-toggle-input" data-preference="marketingOffers">
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="preference-toggle-item">
+                            <div class="toggle-text">
+                                <strong>Sound Effects</strong>
+                                <p>Play a chime when a tutor joins a call or when new direct messages arrive.</p>
+                            </div>
+                            <label class="switch-toggle" aria-label="Toggle sound effects">
+                                <input type="checkbox" class="settings-toggle-input" data-preference="soundEffects" checked>
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: Danger Zone & Privacy -->
+            <div class="settings-tab-panel" id="tab-danger-zone" role="tabpanel">
+                <div class="settings-panel">
+                    <div class="panel-header">
+                        <div>
+                            <h2>Data Export &amp; Privacy</h2>
+                            <p>Download a copy of your session logs, reviews, and transaction history.</p>
+                        </div>
+                        <span class="panel-category-tag">PRIVACY</span>
+                    </div>
+
+                    <div class="action-row-card">
+                        <div>
+                            <strong>Export Personal Data</strong>
+                            <p>Download your complete account data bundle as a JSON archive.</p>
+                        </div>
+                        <button type="button" class="view-btn" id="exportDataBtn">Download Archive</button>
+                    </div>
+                </div>
+
+                <!-- Danger Zone Card -->
+                <div class="settings-panel danger-zone-panel" style="margin-top: 24px;">
+                    <div class="panel-header">
+                        <div>
+                            <h2 class="danger-heading">Danger Zone</h2>
+                            <p>Irreversible actions related to your Learn2Play account.</p>
+                        </div>
+                        <span class="pill" style="background: rgba(248,113,113,0.15); color: var(--danger);">CAUTION</span>
+                    </div>
+
+                    <div class="danger-action-item">
+                        <div>
+                            <strong>Deactivate Account</strong>
+                            <p>Temporarily disable your profile, hide your tutor listings, and pause active subscriptions.</p>
+                        </div>
+                        <button type="button" class="danger-btn outline" id="deactivateBtn">Deactivate</button>
+                    </div>
+
+                    <div class="danger-action-item" style="border-top: 1px solid var(--line); padding-top: 16px;">
+                        <div>
+                            <strong>Delete Account Permanently</strong>
+                            <p>Permanently remove your account, lesson records, ratings, and active sessions. This action cannot be undone.</p>
+                        </div>
+                        <button type="button" class="danger-btn" id="deleteAccountBtn">Delete Account</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Support Footer -->
+            <div class="settings-support-card">
+                <div>
+                    <h3>Have questions about your account?</h3>
+                    <p>Our support team is available 24/7 to help with verifications, payouts, or security concerns.</p>
+                </div>
+                <a class="view-btn" href="{{ url_for('main.help') }}">Contact Support</a>
+            </div>
+        </main>
     </div>
+
+    <!-- Feedback Toast for Saved States -->
+    <div class="settings-toast" id="settingsToast" role="alert" aria-live="polite"></div>
+
+    <!-- Settings Logic -->
+    <script src="{{ url_for('static', filename='js/settings.js') }}" defer></script>
 </body>
 </html>

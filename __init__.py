@@ -1,10 +1,14 @@
-
-from flask import Flask, app
+from flask import Flask
 from flask_login import current_user
+from flask_migrate import Migrate
+from sqlalchemy import text
 
 from config import Config
 from errors import register_error_handlers
 from extensions import db, login_manager, csrf
+
+# Create Migrate instance
+migrate = Migrate()
 
 
 def create_app():
@@ -15,6 +19,7 @@ def create_app():
 
     # Initialize extensions
     db.init_app(app)
+    migrate.init_app(app, db)
     login_manager.init_app(app)
     csrf.init_app(app)
 
@@ -33,11 +38,15 @@ def create_app():
     from routes import main
     app.register_blueprint(main)
 
-    from errors import register_error_handlers
     register_error_handlers(app)
 
-    # Create database tables
+    # Create database tables & auto-add topics column if missing
     with app.app_context():
         db.create_all()
+        try:
+            db.session.execute(text("ALTER TABLE users ADD COLUMN topics_json TEXT DEFAULT '[]'"))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()  # Column already exists, safe to ignore
 
     return app

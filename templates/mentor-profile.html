@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ mentor.name }} | Learn2Play</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body class="dashboard">
+    <header class="topbar mentor-profile-topbar">
+        <a class="tb-brand" href="{{ url_for('main.dashboard') }}">
+            <div class="logo">L2</div>
+            <div class="brand-name">Learn2Play</div>
+        </a>
+        <nav class="settings-nav" aria-label="Main navigation">
+            <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('main.sessions') }}">My sessions</a>
+        </nav>
+        <a class="settings-help-link" href="{{ url_for('main.help') }}">Help &amp; support</a>
+        <div class="tb-profile" id="profileMenu">
+            <button class="tb-avatar" id="userAvatar" type="button"
+                    aria-haspopup="menu" aria-expanded="false" aria-controls="profileDropdown"
+                    aria-label="Open account menu">JD</button>
+            <div class="dropdown hidden" id="profileDropdown" role="menu">
+                <div class="dd-header">
+                    <div class="dd-name" id="menuName">Juan Dela Cruz</div>
+                    <div class="dd-email" id="menuEmail">juan@example.com</div>
+                    <div class="dd-roles" id="menuRoles"></div>
+                </div>
+                <a class="dd-item" role="menuitem" href="{{ url_for('main.profile') }}">View profile</a>
+                <a class="dd-item" role="menuitem" href="{{ url_for('main.sessions') }}">My sessions</a>
+                <a class="dd-item" role="menuitem" href="{{ url_for('main.settings') }}">Settings</a>
+                <a class="dd-item" role="menuitem" href="{{ url_for('main.help') }}">Help &amp; support</a>
+                <div class="dd-sep"></div>
+                <a class="dd-item danger" role="menuitem" href="{{ url_for('main.auth_page') }}" id="logoutBtn">Log out</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="mentor-profile-page">
+        <a class="back-dashboard-btn" href="{{ url_for('main.dashboard') }}">&larr; Back to dashboard</a>
+
+        <section class="mentor-profile-hero settings-panel">
+            <div class="mentor-profile-avatar">{{ mentor.name.split() | map('first') | join('') | upper }}</div>
+            <div class="mentor-profile-heading">
+                <span class="badge {{ 'academic' if mentor.category == 'Academic Tutor' else 'gaming' }}">{{ mentor.category }}</span>
+                <h1>{{ mentor.name }}</h1>
+                <p>{{ mentor.subject }}</p>
+                <div class="mentor-profile-rating" aria-label="{{ mentor.rating }} out of 5 stars">
+                    <span class="mentor-stars">★★★★★</span>
+                    <strong>{{ mentor.rating }}</strong>
+                    <span>({{ mentor.reviews }} reviews)</span>
+                </div>
+            </div>
+            <div class="mentor-profile-booking">
+                <span>Starting at</span>
+                <strong>₱{{ mentor.price }}<small>/hr</small></strong>
+                <button class="edit-profile-btn" type="button" onclick="alert('Booking will be available soon.')">Book a session</button>
+            </div>
+        </section>
+
+        <div class="mentor-profile-layout">
+            <div class="mentor-profile-main">
+                <section class="settings-panel mentor-profile-card">
+                    <h2>About {{ mentor.name.split()[0] }}</h2>
+                    <p>{{ mentor.bio }}</p>
+                </section>
+
+                <section class="settings-panel mentor-profile-card">
+                    <h2>Specialties</h2>
+                    <div class="mentor-specialties">
+                        {% for specialty in mentor.specialties %}
+                        <span>{{ specialty }}</span>
+                        {% endfor %}
+                    </div>
+                </section>
+
+                <section class="settings-panel mentor-profile-card">
+                    <div class="mentor-review-heading">
+                        <h2>Student reviews</h2>
+                        <span>{{ mentor.rating }} average rating</span>
+                    </div>
+                    <blockquote>“Clear, patient, and practical. I left the session with a plan I could actually use.”</blockquote>
+                    <small>Recent Learn2Play student</small>
+                </section>
+            </div>
+
+            <aside class="mentor-profile-sidebar">
+                <section class="settings-panel mentor-profile-card">
+                    <h2>Session details</h2>
+                    <div class="mentor-detail-row"><span>Rate</span><strong>₱{{ mentor.price }}/hr</strong></div>
+                    <div class="mentor-detail-row"><span>Experience</span><strong>{{ mentor.experience }}</strong></div>
+                    <div class="mentor-detail-row"><span>Response time</span><strong>{{ mentor.response_time }}</strong></div>
+                </section>
+            </aside>
+        </div>
+    </main>
+    <script src="{{ url_for('static', filename='js/script.js') }}" defer></script>
+</body>
+</html>

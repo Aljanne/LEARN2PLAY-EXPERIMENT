@@ -1,44 +1,12 @@
-# Python cache files
-__pycache__/
-*.py[cod]
-*$py.class
-
-# Virtual environment
 venv/
 .venv/
-env/
-
-# Environment variables and secrets
+__pycache__/
+*.py[cod]
 .env
 .env.*
 !.env.example
-
-# Flask instance files
-instance/
-
-# Local database
 *.db
 *.sqlite
 *.sqlite3
 learn2play.db
-
-# Test and coverage files
-.pytest_cache/
-.coverage
-htmlcov/
-
-# IDE and editor files
-.vscode/
-.idea/
-
-# Operating system files
-.DS_Store
-Thumbs.db
-
-# Logs
-*.log
-
-# Build and distribution files
-build/
-dist/
-*.egg-info/
+instance/credentials/

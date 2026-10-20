@@ -7,14 +7,13 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body>
-  <!-- Reusable star icon (defined once, used 10x below) -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
     <symbol id="star" viewBox="0 0 24 24"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></symbol>
   </svg>
 
   <main class="login">
 
-    <!-- ============ Brand / hero panel ============ -->
+    <!-- Brand / hero panel (unchanged) -->
     <aside class="brand">
       <svg class="watermark" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         <g stroke="#ffffff" fill="none" stroke-width="1">
@@ -38,8 +37,8 @@
       </div>
 
       <div class="brand-mid">
-        <h2 id="heroTitle">Every legend<br>needs a <em>coach</em>.</h2>
-        <p id="heroText">Book top-rated academic tutors and pro gaming coaches for live 1-on-1 sessions.</p>
+        <h2>Every legend<br>needs a <em>coach</em>.</h2>
+        <p>Book top-rated academic tutors and pro gaming coaches for live 1-on-1 sessions.</p>
 
         <div class="mini-cards">
           <div class="mini">
@@ -58,7 +57,7 @@
                 <span class="rating">4.9</span><span class="reviews">(143)</span>
               </div>
             </div>
-            <div class="price">$35/hr</div>
+            <div class="price">₱550/hr</div>
           </div>
 
           <div class="mini">
@@ -77,32 +76,18 @@
                 <span class="rating">4.8</span><span class="reviews">(211)</span>
               </div>
             </div>
-            <div class="price">$40/hr</div>
+            <div class="price">₱650/hr</div>
           </div>
         </div>
       </div>
     </aside>
 
-    <!-- ============ Form panel (login + sign up) ============ -->
+    <!-- Login panel -->
     <section class="form-wrap">
-      <h1 id="title">Welcome back</h1>
-      <p class="sub" id="subtitle">Log in to pick up where you left off.</p>
+      <h1>Welcome back</h1>
+      <p class="sub">Log in to pick up where you left off.</p>
 
-      <div class="tabs" role="tablist" aria-label="Account options">
-        <button class="tab active" id="tabLogin" type="button" role="tab" aria-selected="true">Log in</button>
-        <button class="tab" id="tabSignup" type="button" role="tab" aria-selected="false">Sign up</button>
-      </div>
-
-      <form id="form" novalidate>
-        <!-- Sign up only -->
-        <label class="field hidden" id="nameField" for="name">
-          <span>Display name</span>
-          <div class="input-wrap">
-            <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>
-            <input type="text" id="name" name="name" placeholder="e.g. kai_plays" autocomplete="username">
-          </div>
-        </label>
-
+      <form id="form" novalidate style="margin-top:24px">
         <label class="field" for="email">
           <span>Email</span>
           <div class="input-wrap">
@@ -123,36 +108,7 @@
           </div>
         </label>
 
-        <!-- Sign up only -->
-        <label class="field hidden" id="confirmField" for="confirmPassword">
-          <span>Confirm password</span>
-          <div class="input-wrap">
-            <svg class="icon" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="10" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
-            <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Enter your password again" autocomplete="new-password">
-          </div>
-        </label>
-
-        <!-- Sign up only: pick one or more roles -->
-        <fieldset class="field roles hidden" id="rolesField">
-          <legend>I want to join as <small>(pick one or more)</small></legend>
-          <div class="role-options">
-            <label class="role">
-              <input type="checkbox" name="roles" value="student">
-              <span class="role-card"><b>Student</b><small>Learn from tutors &amp; coaches</small></span>
-            </label>
-            <label class="role">
-              <input type="checkbox" name="roles" value="mentor">
-              <span class="role-card"><b>Mentor</b><small>Teach academic subjects</small></span>
-            </label>
-            <label class="role">
-              <input type="checkbox" name="roles" value="coach">
-              <span class="role-card"><b>Coach</b><small>Coach gaming skills</small></span>
-            </label>
-          </div>
-        </fieldset>
-
-        <!-- Log in only -->
-        <div class="row-between" id="rememberRow">
+        <div class="row-between">
           <label class="remember">
             <input type="checkbox" id="remember" checked>
             <span class="box"><svg viewBox="0 0 24 24"><path d="M4.5 12.5l5 5 10-11"/></svg></span>
@@ -171,7 +127,7 @@
         <button class="social" type="button"><span class="mark m-a"></span>Apple</button>
       </div>
 
-      <p class="switch" id="switchLine">New to Learn2Play? <a href="#signup" id="switchLink">Get started</a></p>
+      <p class="switch">New to Learn2Play? <a href="{{ url_for('main.register_page') }}">Create an account</a></p>
       <p class="form-note" id="note" role="status" aria-live="polite"></p>
     </section>
 

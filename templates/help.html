@@ -3,33 +3,321 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Help & Support</title>
+    <title>Help &amp; Support | Learn2Play</title>
 
-    <style>
-        body{
-            font-family: Arial, sans-serif;
-            background:#eef2ff;
-            display:flex;
-            justify-content:center;
-            align-items:center;
-            height:100vh;
-        }
-
-        .container{
-            background:white;
-            padding:40px;
-            border-radius:10px;
-            text-align:center;
-        }
-    </style>
+    <!-- Main stylesheet with our help center additions -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
-<body>
 
-<div class="container">
-    <h1>🛟 Help & Support</h1>
-    <p>Need assistance? Our support team will be available soon.</p>
-    <p>Email: support@example.com</p>
-</div>
+<body class="dashboard help-body">
+    <!-- Top Navigation Bar (Handles both logged in & guest users) -->
+    <header class="topbar">
+        <a class="tb-brand" href="{{ url_for('main.dashboard') if current_user.is_authenticated else url_for('main.auth_page') }}" aria-label="Learn2Play Dashboard">
+            <div class="logo">L2</div>
+            <span class="brand-name">Learn2Play</span>
+        </a>
 
+        {% if current_user.is_authenticated %}
+        <nav class="tb-nav" aria-label="Main navigation">
+            <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('main.sessions') }}">My Sessions</a>
+            <a href="{{ url_for('main.profile') }}">Profile</a>
+            <a href="{{ url_for('main.settings') }}">Settings</a>
+            <a href="{{ url_for('main.help') }}" class="active">Help</a>
+        </nav>
+        <div class="tb-right">
+            <a href="{{ url_for('main.profile') }}" class="tb-avatar" title="My Profile">
+                {{ current_user.display_name[:1] | upper if current_user.display_name else 'U' }}
+            </a>
+        </div>
+        {% else %}
+        <div class="tb-right">
+            <a href="{{ url_for('main.auth_page') }}" class="view-btn">Sign in</a>
+            <a href="{{ url_for('main.register_page') }}" class="primary" style="width: auto; padding: 8px 16px; font-size: 13px;">Register</a>
+        </div>
+        {% endif %}
+    </header>
+
+    <!-- Hero Search Section -->
+    <section class="help-hero">
+        <div class="help-hero-inner">
+            <span class="help-pill">HELP CENTER &amp; FAQ</span>
+            <h1>How can we help you today?</h1>
+            <p>Find answers to booking lessons, mentor verification, payments, and our Naga City community guidelines.</p>
+
+            <div class="help-search-bar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" id="helpSearchInput" placeholder="Search topics (e.g., booking, 20% commission, verification, Naga City)..." autocomplete="off">
+            </div>
+
+            <!-- Quick Filter Tags -->
+            <div class="help-tags">
+                <span>Popular:</span>
+                <button type="button" class="help-tag-btn" data-search="Naga City">Naga City</button>
+                <button type="button" class="help-tag-btn" data-search="Commission">80/20 Payouts</button>
+                <button type="button" class="help-tag-btn" data-search="Verification">Teacher &amp; Coach Verification</button>
+                <button type="button" class="help-tag-btn" data-search="Booking">Booking Sessions</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Container -->
+    <div class="help-layout">
+        <!-- 4 Core Topic Cards -->
+        <section class="help-categories-grid">
+            <div class="help-cat-card" onclick="filterHelpCategory('general')">
+                <div class="cat-icon cat-purple">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg>
+                </div>
+                <h3>What is Learn2Play?</h3>
+                <p>Centralized 1-on-1 mentorship combining academic learning and competitive esports coaching.</p>
+                <span class="cat-link">Learn the basics →</span>
+            </div>
+
+            <div class="help-cat-card" onclick="filterHelpCategory('booking')">
+                <div class="cat-icon cat-blue">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                </div>
+                <h3>Bookings &amp; Sessions</h3>
+                <p>How flexible 1-on-1 sessions work, live video calls, rescheduling, and cancellation rules.</p>
+                <span class="cat-link">Session guide →</span>
+            </div>
+
+            <div class="help-cat-card" onclick="filterHelpCategory('coaches')">
+                <div class="cat-icon cat-green">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                </div>
+                <h3>Teaching &amp; Coaching</h3>
+                <p>Credential approvals, rank verification, setting your rates, and the 20% platform commission.</p>
+                <span class="cat-link">Mentor policies →</span>
+            </div>
+
+            <div class="help-cat-card" onclick="filterHelpCategory('safety')">
+                <div class="cat-icon cat-gold">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                </div>
+                <h3>Trust, Ratings &amp; Safety</h3>
+                <p>How verified reviews protect learners, dispute resolutions, and community standards.</p>
+                <span class="cat-link">Safety standards →</span>
+            </div>
+        </section>
+
+        <!-- Interactive FAQ Accordion -->
+        <section class="help-faq-section">
+            <div class="faq-header">
+                <div>
+                    <span class="settings-badge-pill">KNOWLEDGE BASE</span>
+                    <h2>Frequently Asked Questions</h2>
+                </div>
+                <p class="faq-subtitle">Everything you need to know about using Learn2Play as a student, gamer, or mentor.</p>
+            </div>
+
+            <div class="faq-accordion" id="faqAccordion">
+                <!-- FAQ 1 -->
+                <div class="faq-item" data-category="general">
+                    <button class="faq-trigger" type="button" aria-expanded="false">
+                        <span>Why choose Learn2Play over YouTube tutorials or Fiverr?</span>
+                        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </button>
+                    <div class="faq-content">
+                        <p>Unlike passive YouTube videos where nobody can correct your specific mistakes, Learn2Play gives you <strong>live, personalized 1-on-1 mentorship</strong>. Compared to generic freelance marketplaces like Fiverr, Learn2Play is:</p>
+                        <ul class="faq-bullet-list">
+                            <li><strong>Dual-specialized:</strong> Tailored specifically for academic subjects (Math, Science, Languages) AND competitive gaming (Valorant, MLBB, Dota 2, LoL).</li>
+                            <li><strong>Credential-verified:</strong> Every teacher and coach submits diplomas, certificates, or competitive rank screenshots before coaching.</li>
+                            <li><strong>Flexible &amp; local:</strong> Sessions are scheduled around your availability, with support for students and gamers starting in Naga City.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- FAQ 2 -->
+                <div class="faq-item" data-category="general">
+                    <button class="faq-trigger" type="button" aria-expanded="false">
+                        <span>Is Learn2Play only available for people in Naga City?</span>
+                        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </button>
+                    <div class="faq-content">
+                        <p>We are currently piloting Learn2Play specifically targeting students, gamers, and educators residing in <strong>Naga City</strong>. This allows us to work closely with local schools, esports teams, and university communities.</p>
+                        <p>We are planning to expand to more regions across the Philippines soon as our mentor network scales!</p>
+                    </div>
+                </div>
+
+                <!-- FAQ 3 -->
+                <div class="faq-item" data-category="coaches">
+                    <button class="faq-trigger" type="button" aria-expanded="false">
+                        <span>How does the 80/20 commission business model work?</span>
+                        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </button>
+                    <div class="faq-content">
+                        <p>Learn2Play charges a <strong>20% platform commission</strong> from every coaching session booked. The remaining <strong>80% is paid directly to the mentor</strong>.</p>
+                        <p><em>Example:</em> If you set your hourly lesson rate at ₱300:</p>
+                        <ul class="faq-bullet-list">
+                            <li>You receive <strong>₱240</strong> directly into your payout balance.</li>
+                            <li>Learn2Play retains <strong>₱60</strong> to cover platform hosting, security, credential verification, and customer support.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- FAQ 4 -->
+                <div class="faq-item" data-category="coaches">
+                    <button class="faq-trigger" type="button" aria-expanded="false">
+                        <span>What credentials do I need to become a verified Teacher or Coach?</span>
+                        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </button>
+                    <div class="faq-content">
+                        <p>To ensure student safety and high instructional quality, applications undergo admin review:</p>
+                        <ul class="faq-bullet-list">
+                            <li><strong>Academic Teachers:</strong> Submit a photo or PDF of your college diploma, PRC license, certificate of enrollment, or official academic transcript.</li>
+                            <li><strong>Gaming Coaches:</strong> Submit proof of competitive tier/rank (e.g. Immortal/Radiant in Valorant, Mythical Immortal in MLBB), tournament placement certificates, or coaching portfolio links.</li>
+                        </ul>
+                        <p>Review takes approximately 24 to 48 hours. In the meantime, you can use your account as a student.</p>
+                    </div>
+                </div>
+
+                <!-- FAQ 5 -->
+                <div class="faq-item" data-category="booking">
+                    <button class="faq-trigger" type="button" aria-expanded="false">
+                        <span>How are 1-on-1 mentoring sessions conducted?</span>
+                        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </button>
+                    <div class="faq-content">
+                        <p>Sessions are conducted online using voice/video and screen-sharing tools (such as Discord, Google Meet, or Zoom). For gamers, mentors will do live VOD reviews, custom match analysis, and mechanic training drills.</p>
+                    </div>
+                </div>
+
+                <!-- FAQ 6 -->
+                <div class="faq-item" data-category="safety">
+                    <button class="faq-trigger" type="button" aria-expanded="false">
+                        <span>What happens if my mentor misses a session or doesn't show up?</span>
+                        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </button>
+                    <div class="faq-content">
+                        <p>If a coach or teacher fails to attend without a 24-hour advance notice, you are entitled to a full reschedule or credit refund. You can also report no-shows directly from your <a href="{{ url_for('main.sessions') if current_user.is_authenticated else url_for('main.auth_page') }}">My Sessions</a> page.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty State when searching -->
+            <div class="faq-empty-state" id="faqEmptyState" style="display: none;">
+                <p>No answers found matching your search. Try another query or contact our team directly below.</p>
+            </div>
+        </section>
+
+        <!-- Direct Contact & Support Box -->
+        <section class="help-contact-section">
+            <div class="help-contact-card">
+                <div class="contact-card-text">
+                    <span class="pill a">NAGA CITY COMMUNITY SUPPORT</span>
+                    <h2>Still have questions or need assistance?</h2>
+                    <p>Have an issue with a mentor verification, session booking, or want to partner with your school or esports team in Naga City? Send our team a message.</p>
+                </div>
+
+                <form class="help-contact-form" id="helpContactForm" onsubmit="handleSupportSubmit(event)">
+                    <div class="form-grid-2">
+                        <label class="settings-input-group">
+                            <span class="input-label">Your Name</span>
+                            <input type="text" id="contactName" value="{{ current_user.display_name if current_user.is_authenticated else '' }}" placeholder="Enter your name" required>
+                        </label>
+                        <label class="settings-input-group">
+                            <span class="input-label">Your Email</span>
+                            <input type="email" id="contactEmail" value="{{ current_user.email if current_user.is_authenticated else '' }}" placeholder="name@email.com" required>
+                        </label>
+                    </div>
+
+                    <label class="settings-input-group">
+                        <span class="input-label">Subject / Topic</span>
+                        <select id="contactSubject" class="help-select">
+                            <option value="session">Session Issue or Cancellation</option>
+                            <option value="verification">Teacher / Coach Credential Approval</option>
+                            <option value="payouts">Commission &amp; Payout Questions</option>
+                            <option value="naga_community">Naga City Community &amp; Partnerships</option>
+                            <option value="other">Other Inquiries</option>
+                        </select>
+                    </label>
+
+                    <label class="settings-input-group">
+                        <span class="input-label">Message Details</span>
+                        <textarea id="contactMessage" rows="4" class="help-textarea" placeholder="Describe what you need help with..." required></textarea>
+                    </label>
+
+                    <div class="contact-form-footer">
+                        <span class="contact-status-msg" id="contactStatusMsg"></span>
+                        <button type="submit" class="primary" style="width: auto; padding: 11px 26px;">Send Message</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </div>
+
+    <!-- Interactive Help JavaScript -->
+    <script>
+        // 1. Accordion Toggle
+        document.querySelectorAll('.faq-trigger').forEach(trigger => {
+            trigger.addEventListener('click', () => {
+                const item = trigger.closest('.faq-item');
+                const isOpen = item.classList.contains('open');
+
+                // Close all other open items
+                document.querySelectorAll('.faq-item').forEach(other => {
+                    if (other !== item) other.classList.remove('open');
+                });
+
+                item.classList.toggle('open', !isOpen);
+                trigger.setAttribute('aria-expanded', !isOpen);
+            });
+        });
+
+        // 2. Real-Time Search Filter
+        const searchInput = document.getElementById('helpSearchInput');
+        const faqItems = document.querySelectorAll('.faq-item');
+        const emptyState = document.getElementById('faqEmptyState');
+
+        function performSearch(query) {
+            const q = query.trim().toLowerCase();
+            let visibleCount = 0;
+
+            faqItems.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                const matches = text.includes(q);
+                item.style.display = matches ? 'block' : 'none';
+                if (matches) visibleCount++;
+            });
+
+            emptyState.style.display = (visibleCount === 0 && q.length > 0) ? 'block' : 'none';
+        }
+
+        searchInput?.addEventListener('input', (e) => {
+            performSearch(e.target.value);
+        });
+
+        // 3. Quick Tag Buttons
+        document.querySelectorAll('.help-tag-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const searchWord = btn.dataset.search;
+                searchInput.value = searchWord;
+                performSearch(searchWord);
+                document.getElementById('faqAccordion').scrollIntoView({ behavior: 'smooth' });
+            });
+        });
+
+        // 4. Category Filter
+        function filterHelpCategory(category) {
+            faqItems.forEach(item => {
+                const itemCat = item.dataset.category;
+                const matches = category === 'all' || itemCat === category;
+                item.style.display = matches ? 'block' : 'none';
+            });
+            document.getElementById('faqAccordion').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 5. Contact Form Simulation
+        function handleSupportSubmit(event) {
+            event.preventDefault();
+            const statusMsg = document.getElementById('contactStatusMsg');
+            statusMsg.textContent = "Thank you! Your message has been sent to our Naga City support team.";
+            statusMsg.style.color = "var(--green)";
+            event.target.reset();
+            setTimeout(() => { statusMsg.textContent = ""; }, 6000);
+        }
+    </script>
 </body>
 </html>

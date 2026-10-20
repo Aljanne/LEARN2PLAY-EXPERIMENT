@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Learn2Play — Create your account</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body class="register-body">
+  <main class="reg">
+    <header class="reg-head">
+      <a class="tb-brand" href="{{ url_for('main.auth_page') }}">
+        <div class="logo">L2</div><div class="brand-name">Learn2Play</div>
+      </a>
+      <p class="reg-login">Already have an account? <a class="link" href="{{ url_for('main.auth_page') }}">Log in</a></p>
+    </header>
+
+    <h1>Create your account</h1>
+    <p class="sub">Join as a student, a teacher, a coach, or any mix of the three.</p>
+
+    <form id="regForm" novalidate enctype="multipart/form-data">
+
+      <!-- 1. Roles -->
+      <fieldset class="reg-step roles" id="rolesField">
+        <legend><span class="step-no">1</span>I want to join as <small>(pick one or more)</small></legend>
+        <div class="role-options">
+          <label class="role">
+            <input type="checkbox" name="roles" value="student">
+            <span class="role-card"><b>Student</b><small>Learn from teachers &amp; coaches. No proof needed.</small></span>
+          </label>
+          <label class="role">
+            <input type="checkbox" name="roles" value="mentor">
+            <span class="role-card"><b>Teacher</b><small>Teach academic subjects. Credentials required.</small></span>
+          </label>
+          <label class="role">
+            <input type="checkbox" name="roles" value="coach">
+            <span class="role-card"><b>Coach</b><small>Coach gaming skills. Credentials required.</small></span>
+          </label>
+        </div>
+        <p class="field-error" data-for="roles"></p>
+      </fieldset>
+
+      <!-- 2. Account -->
+      <fieldset class="reg-step">
+        <legend><span class="step-no">2</span>Your account</legend>
+        <label class="r-field">Full name
+          <input type="text" id="name" name="name" autocomplete="name" maxlength="80" placeholder="e.g. Maria Santos">
+          <p class="field-error" data-for="name"></p>
+        </label>
+        <label class="r-field">Email
+          <input type="email" id="email" name="email" autocomplete="email" placeholder="you@example.com">
+          <p class="field-error" data-for="email"></p>
+        </label>
+        <div class="r-pair">
+          <label class="r-field">Password
+            <input type="password" id="password" name="password" autocomplete="new-password" placeholder="At least 8 characters">
+            <div class="strength" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+            <small id="strengthText">Use upper and lower case letters and a number.</small>
+            <p class="field-error" data-for="password"></p>
+          </label>
+          <label class="r-field">Confirm password
+            <input type="password" id="confirmPassword" name="confirm_password" autocomplete="new-password" placeholder="Enter it again">
+            <p class="field-error" data-for="confirmPassword"></p>
+          </label>
+        </div>
+      </fieldset>
+
+      <!-- 3. Credentials (teacher / coach only) -->
+      <fieldset class="reg-step hidden" id="credsField">
+        <legend><span class="step-no">3</span>Credentials &amp; achievements</legend>
+        <p class="step-note">Teachers and coaches are verified by an administrator before their role goes live.</p>
+
+        <div class="r-field">
+          <span id="proofLabel">Proof of qualifications</span>
+          <label class="dropzone" id="dropzone" for="proofs">
+            <b>Choose files</b> or drop them here
+            <small>Certificates, licenses, diplomas or awards. PDF, JPG or PNG, up to 5 MB each, max 5 files.</small>
+          </label>
+          <input type="file" id="proofs" name="proofs" multiple accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" aria-labelledby="proofLabel" class="sr-only">
+          <ul class="file-list" id="fileList"></ul>
+          <p class="field-error" data-for="proofs"></p>
+        </div>
+
+        <label class="r-field">Experience and qualifications
+          <textarea id="bio" name="bio" rows="5" maxlength="1500" placeholder="What do you teach or coach, for how long, and what have you achieved?"></textarea>
+          <small><span id="bioCount">0</span>/1500 &middot; at least 50 characters</small>
+          <p class="field-error" data-for="bio"></p>
+        </label>
+
+        <label class="r-field">Portfolio or reference links <em>(optional)</em>
+          <textarea id="links" name="links" rows="3" placeholder="One link per line, e.g. https://your-profile.example.com"></textarea>
+          <small>Up to 5 links, starting with http:// or https://</small>
+          <p class="field-error" data-for="links"></p>
+        </label>
+      </fieldset>
+
+      <!-- 4. Review -->
+      <fieldset class="reg-step">
+        <legend><span class="step-no" id="reviewNo">3</span>Review &amp; submit</legend>
+        <div class="warning" role="note">
+          ⚠️ Your registration will be reviewed by our administrators. The credentials and proof you provide will be verified for qualification. Accounts with unqualified or falsified credentials may be rejected or removed.
+        </div>
+        <label class="ack">
+          <input type="checkbox" id="ack" name="acknowledged" value="true">
+          <span class="box"><svg viewBox="0 0 24 24"><path d="M4.5 12.5l5 5 10-11"/></svg></span>
+          I understand and confirm that everything I submit is accurate.
+        </label>
+        <p class="field-error" data-for="ack"></p>
+
+        <button class="primary" id="submit" type="submit"><span id="btnLabel">Create account</span></button>
+        <p class="form-note" id="note" role="status" aria-live="polite"></p>
+      </fieldset>
+    </form>
+
+    <section class="reg-done hidden" id="done" role="status" aria-live="polite" tabindex="-1">
+      <h2 id="doneTitle"></h2>
+      <p id="doneText"></p>
+      <a class="primary" id="doneLink" href="#"></a>
+    </section>
+  </main>
+  <script src="{{ url_for('static', filename='js/register.js') }}" defer></script>
+</body>
+</html>

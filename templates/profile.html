@@ -3,211 +3,296 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Learn2Play | Profile</title>
+    <title>{{ current_user.display_name }} | Learn2Play Profile</title>
 
+    <!-- Main stylesheet -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+
+    <!-- Free Cropper.js library for interactive image cropping -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 </head>
-<body class="dashboard">
+<body class="dashboard profile-body">
 
     <!-- Top Navbar -->
     <header class="topbar">
-        <a class="tb-brand" href="dashboard.html">
+        <a class="tb-brand" href="{{ url_for('main.dashboard') }}">
             <div class="logo">L2</div>
-            <div class="brand-name">Learn2Play</div>
+            <span class="brand-name">Learn2Play</span>
         </a>
 
-        <div class="tb-search">
-            <svg viewBox="0 0 24 24">
-                <circle cx="11" cy="11" r="7"></circle>
-                <path d="M20 20l-3.8-3.8"></path>
-            </svg>
-            <input type="text" placeholder="Search tutors, coaches, subjects...">
-        </div>
+        <nav class="tb-nav" aria-label="Main navigation">
+            <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('main.sessions') }}">My Sessions</a>
+            <a href="{{ url_for('main.profile') }}" class="active">Profile</a>
+            <a href="{{ url_for('main.settings') }}">Settings</a>
+            <a href="{{ url_for('main.help') }}">Help</a>
+        </nav>
 
-        
-<div class="tb-right">
-    <div class="tb-profile" id="profileMenu">
-        <button
-            class="tb-avatar"
-            id="userAvatar"
-            type="button"
-            aria-haspopup="menu"
-            aria-expanded="false"
-            aria-controls="profileDropdown"
-            aria-label="Open account menu"
-        >
-            ?
-        </button>
+        <div class="tb-right">
+            <div class="tb-profile" id="profileMenu">
+                <button class="tb-avatar" id="userAvatar" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="profileDropdown">
+                    {% if current_user.profile_picture %}
+                        <img src="{{ current_user.profile_picture }}" alt="Avatar" class="avatar-img">
+                    {% else %}
+                        {{ current_user.display_name[:1] | upper if current_user.display_name else 'U' }}
+                    {% endif %}
+                </button>
 
-        <div class="dropdown hidden" id="profileDropdown" role="menu">
-            <div class="dd-header">
-                <div class="dd-name" id="menuName">Loading...</div>
-                <div class="dd-email" id="menuEmail"></div>
-                <div class="dd-roles" id="menuRoles"></div>
+                <div class="dropdown hidden" id="profileDropdown" role="menu">
+                    <div class="dd-header">
+                        <div class="dd-name" id="menuName">{{ current_user.display_name }}</div>
+                        <div class="dd-email" id="menuEmail">{{ current_user.email }}</div>
+                        <div class="dd-roles" id="menuRoles">
+                            {% for role in current_user.roles %}
+                                <span class="pill {{ 'g' if role == 'coach' else 'a' }}">
+                                    {{ "Teacher" if role == "mentor" else (role | title) }}
+                                </span>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <a href="{{ url_for('main.profile') }}" class="dd-item" role="menuitem">View Profile</a>
+                    <a href="{{ url_for('main.sessions') }}" class="dd-item" role="menuitem">My Sessions</a>
+                    <a href="{{ url_for('main.settings') }}" class="dd-item" role="menuitem">Settings</a>
+                    <a href="{{ url_for('main.help') }}" class="dd-item" role="menuitem">Help &amp; Support</a>
+                    <div class="dd-sep"></div>
+                    <button type="button" class="dd-item danger" id="logoutBtn" role="menuitem">Log Out</button>
+                </div>
             </div>
-
-            <a href="{{ url_for('main.profile') }}" role="menuitem">
-                View Profile
-            </a>
-
-            <a href="{{ url_for('main.sessions') }}" role="menuitem">
-                My Sessions
-            </a>
-
-            <a href="{{ url_for('main.settings') }}" role="menuitem">
-                Settings
-            </a>
-
-            <a href="{{ url_for('main.help') }}" role="menuitem">
-                Help &amp; Support
-            </a>
-
-            <a href="{{ url_for('main.auth_page') }}" id="logoutBtn" role="menuitem">
-                Log Out
-            </a>
         </div>
-    </div>
-</div>
-
     </header>
 
-    <!-- Profile Content -->
+    <!-- Main Container -->
     <main class="profile-page">
+        <!-- Back Link -->
+        <div class="profile-back-row">
+            <a href="{{ url_for('main.dashboard') }}" class="settings-back-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                Back to Dashboard
+            </a>
+        </div>
 
-        <div class="profile-navigation">
-    <a href="{{ url_for('main.dashboard') }}" class="back-dashboard-btn">
-        ← Back to Dashboard
-    </a>
-</div>
+        <!-- Hero Card -->
+        <section class="profile-hero">
+            <div class="profile-hero-banner"></div>
 
-        <!-- Profile Hero -->
-<section class="profile-header">
-    <div class="profile-avatar" id="profileAvatar">?</div>
+            <div class="profile-hero-body">
+                <div class="profile-hero-user">
+                    <div class="profile-avatar-circle" id="profileAvatar">
+                        {% if current_user.profile_picture %}
+                            <img src="{{ current_user.profile_picture }}" alt="Avatar" id="avatarImg">
+                        {% else %}
+                            <span id="avatarInitials">{{ current_user.display_name[:2] | upper if current_user.display_name else 'U' }}</span>
+                        {% endif %}
+                    </div>
 
-    <div class="profile-details">
-        <h1 id="profileName">Loading profile...</h1>
-        <p id="profileRoles">Loading roles...</p>
-        <p id="profileEmail"></p>
-    </div>
-
-    <button class="edit-profile-btn" id="editProfileBtn" type="button">
-        Edit Profile
-    </button>
-</section>
-```
-
-        <!-- Main Grid -->
-        <section class="profile-grid">
-
-            <!-- LEFT COLUMN -->
-            <div class="profile-left">
-
-                <div class="profile-card">
-                    <h3>Introduction</h3>
-
-                    <p id="profileBio">
-    Loading introduction...
-</p>
-
-                    <div class="profile-meta">
-                        <span>📍 Philippines</span>
-                        <span>📅 Joined January 2024</span>
-                        <span>🎓 College Student</span>
+                    <div class="profile-hero-text">
+                        <h1 class="profile-name-title" id="profileName">
+                            {{ current_user.display_name }}
+                            <span class="badge-verified">Verified User</span>
+                        </h1>
+                        <p class="profile-hero-email" id="profileEmail">{{ current_user.email }}</p>
+                        
+                        <div class="profile-hero-roles" id="profileRoles">
+                            {% for role in current_user.roles %}
+                                <span class="role-pill {{ 'gaming' if role == 'coach' else 'academic' }}">
+                                    {{ "Academic Teacher" if role == "mentor" else ("Gaming Coach" if role == "coach" else "Student Learner") }}
+                                </span>
+                            {% endfor %}
+                        </div>
                     </div>
                 </div>
 
-                <div class="profile-card">
-                    <h3>Interests</h3>
-
-                    <div class="tags">
-                        <span>Valorant</span>
-                        <span>Essay Writing</span>
-                        <span>Mathematics</span>
-                        <span>Science</span>
-                        <span>Programming</span>
-                    </div>
+                <div class="profile-hero-actions">
+                    <button class="btn-edit-profile" id="editProfileBtn" type="button">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                        Edit Profile
+                    </button>
+                    <a href="{{ url_for('main.settings') }}" class="btn-settings-link">Account Settings</a>
                 </div>
-
-                <div class="profile-card">
-                    <h3>Quick Actions</h3>
-
-                    <a href="sessions.html" class="quick-link">
-                        📅 My Bookings
-                    </a>
-
-                    <a href="dashboard.html" class="quick-link">
-                        🔍 Browse
-                    </a>
-                </div>
-
             </div>
-
-            <!-- RIGHT COLUMN -->
-            <div class="profile-right">
-
-                <div class="profile-card">
-                    <h3>Recent Activity</h3>
-
-                    <div class="activity-list">
-
-                        <div class="activity-item">
-                            <span class="activity-icon"></span>
-                            <p>Booked a Mathematics Tutoring Session</p>
-                        </div>
-
-                        <div class="activity-item">
-                            <span class="activity-icon"></span>
-                            <p>Completed a Science Coaching Session</p>
-                        </div>
-
-                        <div class="activity-item">
-                            <span class="activity-icon"></span>
-                            <p>Booked a Gaming Coach Session</p>
-                        </div>
-
-                        <div class="activity-item">
-                            <span class="activity-icon"></span>
-                            <p>Submitted a Tutor Review</p>
-                        </div>
-
-                    </div>
-                </div>
-
-                <div class="profile-card">
-                    <h3>Learning Summary</h3>
-
-                    <div class="stats-grid">
-
-                        <div class="stat-box">
-                            <h2>12</h2>
-                            <span>Sessions</span>
-                        </div>
-
-                        <div class="stat-box">
-                            <h2>4</h2>
-                            <span>Tutors</span>
-                        </div>
-
-                        <div class="stat-box">
-                            <h2>18</h2>
-                            <span>Hours</span>
-                        </div>
-
-                        <div class="stat-box">
-                            <h2>8</h2>
-                            <span>Reviews</span>
-                        </div>
-
-                    </div>
-                </div>
-
-            </div>
-
         </section>
 
+        <!-- Edit Profile Form -->
+        <form class="profile-edit-form hidden" id="profileEditForm">
+            <div class="panel-header">
+                <div>
+                    <h2>Edit Your Public Profile</h2>
+                    <p>Update your photo, introduction, and the topics or games you specialize in.</p>
+                </div>
+                <button type="button" class="close-icon-btn" id="closeEditBtn" aria-label="Close edit form">✕</button>
+            </div>
+
+            <!-- Profile Picture Drag & Drop Zone -->
+            <div class="settings-input-group" style="margin-bottom: 16px;">
+                <span class="input-label">Profile Photo</span>
+                
+                <div class="avatar-dropzone" id="avatarDropzone">
+                    <input type="file" id="avatarFileInput" accept="image/png, image/jpeg, image/jpg, image/webp" class="sr-only">
+                    <div class="dropzone-content">
+                        <div class="dropzone-icon">📷</div>
+                        <p><strong>Click to browse</strong> or drag and drop an image</p>
+                        <small>PNG, JPG, or WEBP (Max 5MB). You will be able to crop it directly.</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-grid-2">
+                <label class="settings-input-group">
+                    <span class="input-label">Display name *</span>
+                    <input id="editName" name="name" type="text" value="{{ current_user.display_name }}" minlength="2" maxlength="80" required>
+                </label>
+
+                <label class="settings-input-group">
+                    <span class="input-label">Topics &amp; Games</span>
+                    <input id="editTopics" name="topics" type="text" value="{{ current_user.topics | join(', ') if current_user.topics else '' }}" placeholder="e.g. Valorant, Mathematics, Calculus, MLBB">
+                </label>
+            </div>
+
+            <label class="settings-input-group" style="margin-top: 14px;">
+                <span class="input-label">About You / Introduction</span>
+                <textarea id="editBio" name="bio" maxlength="500" rows="3" placeholder="Share your academic interests, gaming rank, or mentoring style...">{{ current_user.bio or '' }}</textarea>
+                <div class="bio-char-counter"><span id="bioCount">0</span>/500 characters</div>
+            </label>
+
+            <div class="panel-footer">
+                <p id="profileFormMessage" class="form-feedback-msg"></p>
+                <div class="profile-form-actions">
+                    <button class="profile-cancel-btn" type="button" id="cancelEditBtn">Cancel</button>
+                    <button class="btn-edit-profile" type="submit" id="saveProfileBtn">Save Changes</button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Content Grid Layout -->
+        <section class="profile-grid-layout">
+            <!-- Left Column -->
+            <div class="left-col">
+                <!-- Bio Card -->
+                <div class="content-card">
+                    <h3 class="card-heading">About Me</h3>
+                    <p class="card-subtext" id="profileBio">
+                        {% if current_user.bio %}
+                            {{ current_user.bio }}
+                        {% else %}
+                            <em style="color: var(--txt3);">No introduction added yet. Click "Edit Profile" to introduce yourself!</em>
+                        {% endif %}
+                    </p>
+
+                    <div class="meta-list">
+                        <div class="meta-row">
+                            <span>📍</span>
+                            <span>Naga City, Philippines</span>
+                        </div>
+                        <div class="meta-row">
+                            <span>🎓</span>
+                            <span>Centralized Mentorship Program</span>
+                        </div>
+                        <div class="meta-row">
+                            <span>⚡</span>
+                            <span>Active Learner &amp; Gamer</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Topics & Games -->
+                <div class="content-card">
+                    <h3 class="card-heading">Topics &amp; Games</h3>
+                    <div class="topics-tag-list" id="profileTopicsList">
+                        {% if current_user.topics and current_user.topics | length > 0 %}
+                            {% for topic in current_user.topics %}
+                                <span class="topic-pill user-topic">{{ topic }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <p class="empty-hint" id="noTopicsHint">No topics or games added yet. Click "Edit Profile" to add them!</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Quick Navigation -->
+                <div class="content-card">
+                    <h3 class="card-heading">Quick Navigation</h3>
+                    <a href="{{ url_for('main.sessions') }}" class="quick-link">
+                        <span class="ql-icon">📅</span>
+                        <div>
+                            <strong>My Scheduled Sessions</strong>
+                            <small>View upcoming lessons</small>
+                        </div>
+                    </a>
+                    <a href="{{ url_for('main.dashboard') }}" class="quick-link">
+                        <span class="ql-icon">🔍</span>
+                        <div>
+                            <strong>Browse Mentors</strong>
+                            <small>Find verified teachers &amp; coaches</small>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="right-col">
+                <!-- Activity Overview -->
+                <div class="content-card">
+                    <h3 class="card-heading">Activity Overview</h3>
+                    <div class="stat-grid-2x2">
+                        <div class="stat-card-item">
+                            <div class="stat-number" id="statSessions">0</div>
+                            <span class="stat-label">Sessions Done</span>
+                        </div>
+                        <div class="stat-card-item">
+                            <div class="stat-number" id="statMentors">0</div>
+                            <span class="stat-label">Mentors Met</span>
+                        </div>
+                        <div class="stat-card-item">
+                            <div class="stat-number" id="statHours">0</div>
+                            <span class="stat-label">Hours Completed</span>
+                        </div>
+                        <div class="stat-card-item">
+                            <div class="stat-number" id="statRating">—</div>
+                            <span class="stat-label">Avg Rating ⭐</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Milestones -->
+                <div class="content-card">
+                    <h3 class="card-heading">Recent Milestones</h3>
+                    <div class="milestones-empty" id="milestonesEmpty">
+                        <div class="milestone-empty-icon">🎯</div>
+                        <p class="milestone-empty-title">No recorded milestones yet</p>
+                        <small class="milestone-empty-sub">Once you complete sessions or receive tutor reviews, your milestones will automatically appear here.</small>
+                    </div>
+                </div>
+            </div>
+        </section>
     </main>
 
-    <script src="{{ url_for('static', filename='js/profile.js') }}" defer></script>
+    <!-- Interactive Image Cropper Modal Window -->
+    <div class="crop-modal-backdrop hidden" id="cropModal">
+        <div class="crop-modal-dialog">
+            <div class="crop-modal-header">
+                <h3>Crop Profile Photo</h3>
+                <button type="button" class="close-icon-btn" id="cancelCropBtn">✕</button>
+            </div>
 
+            <div class="crop-image-area">
+                <img id="cropperImageSrc" src="" alt="To Crop">
+            </div>
+
+            <div class="crop-controls">
+                <button type="button" class="crop-tool-btn" id="zoomInBtn" title="Zoom In">🔍 +</button>
+                <button type="button" class="crop-tool-btn" id="zoomOutBtn" title="Zoom Out">🔍 −</button>
+                <button type="button" class="crop-tool-btn" id="rotateLeftBtn" title="Rotate Left">⟲ Rotate</button>
+            </div>
+
+            <div class="crop-modal-footer">
+                <button type="button" class="profile-cancel-btn" id="closeCropBtn">Cancel</button>
+                <button type="button" class="btn-edit-profile" id="saveCropBtn">Apply &amp; Save Photo</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/profile.js') }}" defer></script>
 </body>
 </html>
