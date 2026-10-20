@@ -9,7 +9,10 @@ from wtforms.validators import (
     ValidationError,
 )
 
-from models import User
+if __package__:
+    from .models import User
+else:
+    from models import User
 
 
 ALLOWED_ROLES = {"student", "mentor", "coach"}

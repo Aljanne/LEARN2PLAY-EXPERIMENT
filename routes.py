@@ -27,14 +27,18 @@ from flask_wtf.csrf import generate_csrf
 from sqlalchemy.exc import IntegrityError
 from werkzeug.utils import secure_filename
 
-from extensions import db
-from models import Appointment, Credential, RoleApplication, User, utcnow
+if __package__:
+    from .extensions import db
+    from .models import Appointment, Credential, RoleApplication, User, utcnow
+else:
+    from extensions import db
+    from models import Appointment, Credential, RoleApplication, User, utcnow
 
 main = Blueprint("main", __name__)
 
 # ---------- Application Configuration & Central Currency ----------
 ALLOWED_ROLES = {"student", "mentor", "coach"}   # "mentor" is displayed to users as "Teacher"
-VERIFIED_ROLES = set()                           # require admin review if configured
+VERIFIED_ROLES = {"mentor", "coach"}            # activation requires admin approval
 
 CURRENCY_CODE = "PHP"
 CURRENCY_SYMBOL = "₱"
@@ -869,3 +873,9 @@ def settings():
 @main.route("/help")
 def help():
     return render_template("help.html")
+
+
+@main.route("/messages")
+@login_required
+def messages():
+    return render_template("messages.html")

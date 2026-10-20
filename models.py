@@ -5,7 +5,10 @@ from decimal import Decimal
 from flask_login import UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from extensions import db
+if __package__:
+    from .extensions import db
+else:
+    from extensions import db
 
 
 def utcnow():

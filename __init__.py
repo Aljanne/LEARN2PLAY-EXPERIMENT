@@ -3,9 +3,14 @@ from flask_login import current_user
 from flask_migrate import Migrate
 from sqlalchemy import text
 
-from config import Config
-from errors import register_error_handlers
-from extensions import csrf, db, login_manager
+if __package__:
+    from .config import Config
+    from .errors import register_error_handlers
+    from .extensions import csrf, db, login_manager
+else:
+    from config import Config
+    from errors import register_error_handlers
+    from extensions import csrf, db, login_manager
 
 migrate = Migrate()
 
@@ -23,7 +28,10 @@ def create_app():
     csrf.init_app(app)
 
     # Import models so SQLAlchemy knows about them
-    from models import Appointment, Credential, RoleApplication, User
+    if __package__:
+        from .models import Appointment, Credential, RoleApplication, User
+    else:
+        from models import Appointment, Credential, RoleApplication, User
 
     # Tell Flask-Login how to find a user by ID
     @login_manager.user_loader
@@ -34,7 +42,10 @@ def create_app():
             return None
 
     # Register application routes
-    from routes import main
+    if __package__:
+        from .routes import main
+    else:
+        from routes import main
     app.register_blueprint(main)
 
     register_error_handlers(app)
