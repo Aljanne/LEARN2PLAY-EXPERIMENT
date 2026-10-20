@@ -11,32 +11,67 @@
 
 <body class="dashboard help-body">
     <!-- Top Navigation Bar (Handles both logged in & guest users) -->
-    <header class="topbar">
-        <a class="tb-brand" href="{{ url_for('main.dashboard') if current_user.is_authenticated else url_for('main.auth_page') }}" aria-label="Learn2Play Dashboard">
-            <div class="logo">L2</div>
-            <span class="brand-name">Learn2Play</span>
-        </a>
+      <!-- Top Navbar -->
+  <header class="topbar">
+    <a class="tb-brand" href="{{ url_for('main.dashboard') }}">
+      <div class="logo">L2</div>
+      <span class="brand-name">Learn2Play</span>
+    </a>
 
-        {% if current_user.is_authenticated %}
-        <nav class="tb-nav" aria-label="Main navigation">
-            <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
-            <a href="{{ url_for('main.sessions') }}">My Sessions</a>
-            <a href="{{ url_for('main.profile') }}">Profile</a>
-            <a href="{{ url_for('main.settings') }}">Settings</a>
-            <a href="{{ url_for('main.help') }}" class="active">Help</a>
-        </nav>
-        <div class="tb-right">
-            <a href="{{ url_for('main.profile') }}" class="tb-avatar" title="My Profile">
-                {{ current_user.display_name[:1] | upper if current_user.display_name else 'U' }}
-            </a>
+    <!-- Unified Navigation Links -->
+    <nav class="tb-nav" aria-label="Main navigation">
+      <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
+
+      <!-- Teacher / Coach Provider Schedule Link -->
+      {% if current_user.is_authenticated and ('mentor' in current_user.roles or 'coach' in current_user.roles) %}
+        <a href="{{ url_for('main.schedule') }}">Schedule</a>
+      {% endif %}
+
+      <a href="{{ url_for('main.sessions') }}">My Sessions</a>
+      <a href="{{ url_for('main.profile') }}">Profile</a>
+      <a href="{{ url_for('main.settings') }}">Settings</a>
+      <a href="{{ url_for('main.help') }}" class="active">Help</a>
+    </nav>
+
+    <!-- User Profile Dropdown -->
+    <div class="tb-right">
+      <div class="tb-profile" id="profileMenu">
+        <button class="tb-avatar" id="userAvatar" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="profileDropdown">
+          {% if current_user.is_authenticated and current_user.profile_picture %}
+            <img src="{{ current_user.profile_picture }}" alt="Avatar" class="avatar-img">
+          {% else %}
+            {{ current_user.display_name[:1] | upper if current_user.is_authenticated and current_user.display_name else 'U' }}
+          {% endif %}
+        </button>
+
+        <div class="dropdown hidden" id="profileDropdown" role="menu">
+          <div class="dd-header">
+            <div class="dd-name" id="menuName">{{ current_user.display_name if current_user.is_authenticated else 'Account User' }}</div>
+            <div class="dd-email" id="menuEmail">{{ current_user.email if current_user.is_authenticated else '' }}</div>
+            <div class="dd-roles" id="menuRoles">
+              {% if current_user.is_authenticated and current_user.roles %}
+                {% for role in current_user.roles %}
+                  <span class="pill {{ 'g' if role == 'coach' else 'a' }}">
+                    {{ "Teacher" if role == "mentor" else (role | title) }}
+                  </span>
+                {% endfor %}
+              {% endif %}
+            </div>
+          </div>
+
+          <a class="dd-item" role="menuitem" href="{{ url_for('main.profile') }}">View profile</a>
+          {% if current_user.is_authenticated and ('mentor' in current_user.roles or 'coach' in current_user.roles) %}
+            <a class="dd-item" role="menuitem" href="{{ url_for('main.schedule') }}">Teaching Schedule</a>
+          {% endif %}
+          <a class="dd-item" role="menuitem" href="{{ url_for('main.sessions') }}">My sessions</a>
+          <a class="dd-item" role="menuitem" href="{{ url_for('main.settings') }}">Settings</a>
+          <a class="dd-item" role="menuitem" href="{{ url_for('main.help') }}">Help &amp; support</a>
+          <div class="dd-sep"></div>
+          <button type="button" class="dd-item danger" id="logoutBtn" role="menuitem">Log out</button>
         </div>
-        {% else %}
-        <div class="tb-right">
-            <a href="{{ url_for('main.auth_page') }}" class="view-btn">Sign in</a>
-            <a href="{{ url_for('main.register_page') }}" class="primary" style="width: auto; padding: 8px 16px; font-size: 13px;">Register</a>
-        </div>
-        {% endif %}
-    </header>
+      </div>
+    </div>
+  </header>
 
     <!-- Hero Search Section -->
     <section class="help-hero">

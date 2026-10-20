@@ -7,152 +7,199 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body class="dashboard">
-    <header class="topbar settings-topbar">
-        <a class="tb-brand" href="{{ url_for('main.dashboard') }}">
-            <div class="logo">L2</div>
-            <div class="brand-name">Learn2Play</div>
-        </a>
-        <nav class="settings-nav" aria-label="Main navigation">
-            <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
-            <a class="active" href="{{ url_for('main.sessions') }}">My sessions</a>
-            <a href="{{ url_for('main.profile') }}">Profile</a>
-        </nav>
-        <a class="settings-help-link" href="{{ url_for('main.help') }}">Help &amp; support</a>
-        <div class="tb-profile" id="profileMenu">
-            <button class="tb-avatar" id="userAvatar" type="button"
-                    aria-haspopup="menu" aria-expanded="false" aria-controls="profileDropdown"
-                    aria-label="Open account menu">JD</button>
-            <div class="dropdown hidden" id="profileDropdown" role="menu">
-                <div class="dd-header">
-                    <div class="dd-name" id="menuName">Juan Dela Cruz</div>
-                    <div class="dd-email" id="menuEmail">juan@example.com</div>
-                    <div class="dd-roles" id="menuRoles"></div>
-                </div>
-                <a class="dd-item" role="menuitem" href="{{ url_for('main.profile') }}">View profile</a>
-                <a class="dd-item" role="menuitem" href="{{ url_for('main.sessions') }}">My sessions</a>
-                <a class="dd-item" role="menuitem" href="{{ url_for('main.settings') }}">Settings</a>
-                <a class="dd-item" role="menuitem" href="{{ url_for('main.help') }}">Help &amp; support</a>
-                <div class="dd-sep"></div>
-                <a class="dd-item danger" role="menuitem" href="{{ url_for('main.auth_page') }}" id="logoutBtn">Log out</a>
+
+    <!-- Top Navbar -->
+      <!-- Top Navbar -->
+  <header class="topbar">
+    <a class="tb-brand" href="{{ url_for('main.dashboard') }}">
+      <div class="logo">L2</div>
+      <span class="brand-name">Learn2Play</span>
+    </a>
+
+    <!-- Unified Navigation Links -->
+    <nav class="tb-nav" aria-label="Main navigation">
+      <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
+
+      <!-- Teacher / Coach Provider Schedule Link -->
+      {% if current_user.is_authenticated and ('mentor' in current_user.roles or 'coach' in current_user.roles) %}
+        <a href="{{ url_for('main.schedule') }}">Schedule</a>
+      {% endif %}
+
+      <a href="{{ url_for('main.sessions') }}" class="active">My Sessions</a>
+      <a href="{{ url_for('main.profile') }}">Profile</a>
+      <a href="{{ url_for('main.settings') }}">Settings</a>
+      <a href="{{ url_for('main.help') }}">Help</a>
+    </nav>
+
+    <!-- User Profile Dropdown -->
+    <div class="tb-right">
+      <div class="tb-profile" id="profileMenu">
+        <button class="tb-avatar" id="userAvatar" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="profileDropdown">
+          {% if current_user.is_authenticated and current_user.profile_picture %}
+            <img src="{{ current_user.profile_picture }}" alt="Avatar" class="avatar-img">
+          {% else %}
+            {{ current_user.display_name[:1] | upper if current_user.is_authenticated and current_user.display_name else 'U' }}
+          {% endif %}
+        </button>
+
+        <div class="dropdown hidden" id="profileDropdown" role="menu">
+          <div class="dd-header">
+            <div class="dd-name" id="menuName">{{ current_user.display_name if current_user.is_authenticated else 'Account User' }}</div>
+            <div class="dd-email" id="menuEmail">{{ current_user.email if current_user.is_authenticated else '' }}</div>
+            <div class="dd-roles" id="menuRoles">
+              {% if current_user.is_authenticated and current_user.roles %}
+                {% for role in current_user.roles %}
+                  <span class="pill {{ 'g' if role == 'coach' else 'a' }}">
+                    {{ "Teacher" if role == "mentor" else (role | title) }}
+                  </span>
+                {% endfor %}
+              {% endif %}
             </div>
+          </div>
+
+          <a class="dd-item" role="menuitem" href="{{ url_for('main.profile') }}">View profile</a>
+          {% if current_user.is_authenticated and ('mentor' in current_user.roles or 'coach' in current_user.roles) %}
+            <a class="dd-item" role="menuitem" href="{{ url_for('main.schedule') }}">Teaching Schedule</a>
+          {% endif %}
+          <a class="dd-item" role="menuitem" href="{{ url_for('main.sessions') }}">My sessions</a>
+          <a class="dd-item" role="menuitem" href="{{ url_for('main.settings') }}">Settings</a>
+          <a class="dd-item" role="menuitem" href="{{ url_for('main.help') }}">Help &amp; support</a>
+          <div class="dd-sep"></div>
+          <button type="button" class="dd-item danger" id="logoutBtn" role="menuitem">Log out</button>
         </div>
-    </header>
+      </div>
+    </div>
+  </header>
 
     <main class="sessions-page">
         <a class="back-dashboard-btn sessions-back" href="{{ url_for('main.dashboard') }}">&larr; Back to dashboard</a>
 
+        <!-- ================= STUDENT VIEW ================= -->
         <div id="studentSessionsView">
-        <div class="sessions-heading">
-            <div>
-                <p class="settings-eyebrow">YOUR LEARNING SCHEDULE</p>
-                <h1>My Sessions</h1>
-                <p>Keep track of your upcoming tutoring and coaching sessions.</p>
-            </div>
-            <a class="edit-profile-btn sessions-book-btn" href="{{ url_for('main.dashboard') }}">Find a mentor</a>
-        </div>
-
-        <section class="session-summary" aria-label="Session summary">
-            <div class="session-summary-card"><span class="session-summary-label">Upcoming</span><strong id="upcomingCount">2</strong><small>sessions scheduled</small></div>
-            <div class="session-summary-card"><span class="session-summary-label">This week</span><strong>1</strong><small>session to attend</small></div>
-            <div class="session-summary-card"><span class="session-summary-label">Completed</span><strong>12</strong><small>sessions finished</small></div>
-        </section>
-
-        <section class="sessions-panel settings-panel" aria-labelledby="schedule-heading">
-            <div class="sessions-panel-heading">
+            <div class="sessions-heading">
                 <div>
-                    <h2 id="schedule-heading">Your schedule</h2>
-                    <p>Review your bookings and past learning activity.</p>
+                    <p class="settings-eyebrow">YOUR LEARNING SCHEDULE</p>
+                    <h1>My Sessions</h1>
+                    <p>Keep track of your scheduled tutoring and gaming coaching lessons.</p>
                 </div>
-                <div class="session-tabs" role="tablist" aria-label="Filter sessions">
-                    <button class="session-tab active" type="button" data-status="upcoming" role="tab" aria-selected="true">Upcoming</button>
-                    <button class="session-tab" type="button" data-status="completed" role="tab" aria-selected="false">Past sessions</button>
-                </div>
+                <a class="edit-profile-btn sessions-book-btn" href="{{ url_for('main.dashboard') }}">Find a mentor</a>
             </div>
 
-            <div class="session-list" id="sessionList">
-                <article class="scheduled-session" data-status="upcoming">
-                    <div class="session-date"><strong>27</strong><span>OCT</span></div>
-                    <div class="session-details"><div class="session-title-row"><h3>Mathematics &amp; Calculus</h3><span class="session-status upcoming-status">Upcoming</span></div><p>with Sophia Reyes</p><div class="session-meta"><span>Tuesday, October 27, 2026</span><span>10:00 AM &bull; 60 min</span></div></div>
-                    <div class="session-actions"><strong>₱550</strong><div class="session-actions-buttons"><button type="button" class="session-action">View details</button><button type="button" class="session-action cancel-session-action">Cancel session</button></div></div>
-                </article>
-                <article class="scheduled-session" data-status="upcoming">
-                    <div class="session-date gaming-date"><strong>30</strong><span>OCT</span></div>
-                    <div class="session-details"><div class="session-title-row"><h3>Valorant &amp; FPS Strategy</h3><span class="session-status upcoming-status">Upcoming</span></div><p>with Marcus Chen</p><div class="session-meta"><span>Friday, October 30, 2026</span><span>7:30 PM &bull; 60 min</span></div></div>
-                    <div class="session-actions"><strong>₱650</strong><div class="session-actions-buttons"><button type="button" class="session-action">View details</button><button type="button" class="session-action cancel-session-action">Cancel session</button></div></div>
-                </article>
-                <article class="scheduled-session" data-status="completed">
-                    <div class="session-date completed-date"><strong>14</strong><span>OCT</span></div>
-                    <div class="session-details"><div class="session-title-row"><h3>English &amp; Essay Writing</h3><span class="session-status completed-status">Completed</span></div><p>with Elena Vasquez</p><div class="session-meta"><span>Wednesday, October 14, 2026</span><span>4:00 PM &bull; 60 min</span></div></div>
-                    <div class="session-actions"><strong>₱400</strong><button type="button" class="session-action">View notes</button></div>
-                </article>
-                <article class="scheduled-session" data-status="completed">
-                    <div class="session-date completed-date"><strong>09</strong><span>OCT</span></div>
-                    <div class="session-details"><div class="session-title-row"><h3>Chemistry &amp; Biology</h3><span class="session-status completed-status">Completed</span></div><p>with Amara Osei</p><div class="session-meta"><span>Friday, October 9, 2026</span><span>5:30 PM &bull; 60 min</span></div></div>
-                    <div class="session-actions"><strong>₱450</strong><button type="button" class="session-action">View notes</button></div>
-                </article>
-                <article class="scheduled-session" data-status="completed">
-                    <div class="session-date completed-date"><strong>02</strong><span>OCT</span></div>
-                    <div class="session-details"><div class="session-title-row"><h3>League of Legends</h3><span class="session-status completed-status">Completed</span></div><p>with Kai Nakamura</p><div class="session-meta"><span>Friday, October 2, 2026</span><span>8:00 PM &bull; 60 min</span></div></div>
-                    <div class="session-actions"><strong>₱750</strong><button type="button" class="session-action">View notes</button></div>
-                </article>
-            </div>
-            <p class="sessions-empty hidden" id="sessionsEmpty">There are no sessions in this view yet.</p>
-        </section>
+            <!-- Summary Cards (Reset to 0) -->
+            <section class="session-summary" aria-label="Session summary">
+                <div class="session-summary-card">
+                    <span class="session-summary-label">Upcoming</span>
+                    <strong id="upcomingCount">0</strong>
+                    <small>sessions scheduled</small>
+                </div>
+                <div class="session-summary-card">
+                    <span class="session-summary-label">This week</span>
+                    <strong id="thisWeekCount">0</strong>
+                    <small>sessions to attend</small>
+                </div>
+                <div class="session-summary-card">
+                    <span class="session-summary-label">Completed</span>
+                    <strong id="completedCount">0</strong>
+                    <small>sessions finished</small>
+                </div>
+            </section>
+
+            <!-- Schedule Panel -->
+            <section class="sessions-panel settings-panel" aria-labelledby="schedule-heading">
+                <div class="sessions-panel-heading">
+                    <div>
+                        <h2 id="schedule-heading">Your Schedule</h2>
+                        <p>Review your active bookings and lesson history.</p>
+                    </div>
+                    <div class="session-tabs" role="tablist" aria-label="Filter sessions">
+                        <button class="session-tab active" type="button" data-status="upcoming" role="tab" aria-selected="true">Upcoming</button>
+                        <button class="session-tab" type="button" data-status="completed" role="tab" aria-selected="false">Past sessions</button>
+                    </div>
+                </div>
+
+                <!-- Session Items List (Clean Empty State) -->
+                <div class="session-list" id="sessionList">
+                    <!-- Dynamic sessions will be appended here once booked -->
+                </div>
+
+                <!-- Empty State Message -->
+                <div class="sessions-empty-box" id="sessionsEmpty">
+                    <div class="empty-icon">📅</div>
+                    <h3>No scheduled sessions yet</h3>
+                    <p>You haven't booked any academic tutors or gaming coaches yet. Browse our verified mentors to schedule your first 1-on-1 session!</p>
+                    <a href="{{ url_for('main.dashboard') }}" class="view-btn" style="margin-top: 12px; display: inline-block;">Browse Mentors &rarr;</a>
+                </div>
+            </section>
         </div>
 
+        <!-- ================= MENTOR WORKSPACE (For Teachers & Coaches) ================= -->
         <div id="mentorSessionsView" class="hidden">
             <div class="sessions-heading">
                 <div>
                     <p class="settings-eyebrow">MENTOR WORKSPACE</p>
-                    <h1>Session management</h1>
-                    <p>Manage learner requests, upcoming sessions, and your availability.</p>
+                    <h1>Session Management</h1>
+                    <p>Manage learner requests, upcoming appointments, and your availability.</p>
                 </div>
                 <button class="edit-profile-btn sessions-book-btn mentor-availability-btn" type="button">Manage availability</button>
             </div>
 
             <section class="session-summary" aria-label="Mentor session summary">
-                <div class="session-summary-card mentor-summary-card"><span class="session-summary-label">Pending requests</span><strong>3</strong><small>need your response</small></div>
-                <div class="session-summary-card mentor-summary-card"><span class="session-summary-label">Upcoming learners</span><strong>5</strong><small>sessions this week</small></div>
-                <div class="session-summary-card mentor-summary-card"><span class="session-summary-label">This month</span><strong>₱3,250</strong><small>estimated earnings</small></div>
+                <div class="session-summary-card mentor-summary-card">
+                    <span class="session-summary-label">Pending requests</span>
+                    <strong>0</strong>
+                    <small>need your response</small>
+                </div>
+                <div class="session-summary-card mentor-summary-card">
+                    <span class="session-summary-label">Upcoming learners</span>
+                    <strong>0</strong>
+                    <small>sessions this week</small>
+                </div>
+                <div class="session-summary-card mentor-summary-card">
+                    <span class="session-summary-label">This month</span>
+                    <strong>₱0</strong>
+                    <small>estimated earnings</small>
+                </div>
             </section>
 
             <div class="mentor-session-layout">
+                <!-- Booking Requests -->
                 <section class="sessions-panel settings-panel" aria-labelledby="requests-heading">
                     <div class="sessions-panel-heading">
-                        <div><h2 id="requests-heading">Booking requests</h2><p>Review and respond to learners who want to work with you.</p></div>
-                        <span class="mentor-request-count">3 new</span>
+                        <div>
+                            <h2 id="requests-heading">Booking requests</h2>
+                            <p>Review and respond to learners who want to work with you.</p>
+                        </div>
+                        <span class="mentor-request-count">0 new</span>
                     </div>
-                    <div class="mentor-request-list">
-                        <article class="mentor-request-card">
-                            <div class="mentor-request-avatar">JL</div>
-                            <div class="mentor-request-details"><h3>Jamie Lee</h3><p>Mathematics &amp; Calculus</p><span>Tuesday, October 27 &bull; 10:00 AM</span></div>
-                            <div class="mentor-request-actions"><button class="session-action mentor-accept-btn" type="button">Accept</button><button class="session-action mentor-decline-btn" type="button">Decline</button></div>
-                        </article>
-                        <article class="mentor-request-card">
-                            <div class="mentor-request-avatar request-green">AR</div>
-                            <div class="mentor-request-details"><h3>Alex Rivera</h3><p>Valorant &amp; FPS Strategy</p><span>Friday, October 30 &bull; 7:30 PM</span></div>
-                            <div class="mentor-request-actions"><button class="session-action mentor-accept-btn" type="button">Accept</button><button class="session-action mentor-decline-btn" type="button">Decline</button></div>
-                        </article>
-                        <article class="mentor-request-card">
-                            <div class="mentor-request-avatar request-gold">MK</div>
-                            <div class="mentor-request-details"><h3>Mika Santos</h3><p>Study planning and exam prep</p><span>Saturday, November 1 &bull; 2:00 PM</span></div>
-                            <div class="mentor-request-actions"><button class="session-action mentor-accept-btn" type="button">Accept</button><button class="session-action mentor-decline-btn" type="button">Decline</button></div>
-                        </article>
+
+                    <div class="mentor-request-list" id="mentorRequestList">
+                        <div class="sessions-empty-box" style="padding: 24px 12px;">
+                            <div class="empty-icon">📩</div>
+                            <p style="color: var(--txt3); font-size: 13px;">No pending booking requests right now.</p>
+                        </div>
                     </div>
                 </section>
 
+                <!-- Upcoming Appointments -->
                 <section class="sessions-panel settings-panel" aria-labelledby="mentor-upcoming-heading">
-                    <div class="sessions-panel-heading"><div><h2 id="mentor-upcoming-heading">Upcoming sessions</h2><p>Your next learner appointments.</p></div></div>
-                    <div class="mentor-upcoming-list">
-                        <div class="mentor-upcoming-item"><span class="mentor-upcoming-time">10:00<br><small>AM</small></span><div><strong>Jamie Lee</strong><span>Mathematics &amp; Calculus</span></div></div>
-                        <div class="mentor-upcoming-item"><span class="mentor-upcoming-time">7:30<br><small>PM</small></span><div><strong>Alex Rivera</strong><span>Valorant &amp; FPS Strategy</span></div></div>
-                        <div class="mentor-upcoming-item"><span class="mentor-upcoming-time">2:00<br><small>PM</small></span><div><strong>Jordan Kim</strong><span>Weekly study coaching</span></div></div>
+                    <div class="sessions-panel-heading">
+                        <div>
+                            <h2 id="mentor-upcoming-heading">Upcoming sessions</h2>
+                            <p>Your next learner appointments.</p>
+                        </div>
+                    </div>
+
+                    <div class="mentor-upcoming-list" id="mentorUpcomingList">
+                        <div class="sessions-empty-box" style="padding: 24px 12px;">
+                            <div class="empty-icon">⏰</div>
+                            <p style="color: var(--txt3); font-size: 13px;">No upcoming sessions scheduled.</p>
+                        </div>
                     </div>
                 </section>
             </div>
         </div>
     </main>
-    <script src="{{ url_for('static', filename='js/script.js') }}" defer></script>
-    <script src="{{ url_for('static', filename='js/sessions.js', v='session-tabs-2') }}" defer></script>
+
+    <script src="{{ url_for('static', filename='js/sessions.js') }}" defer></script>
 </body>
 </html>

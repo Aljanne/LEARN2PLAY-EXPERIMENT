@@ -79,9 +79,26 @@ function showSettingsToast(message, isError = false) {
         if (nameEl) nameEl.textContent = name;
         if (emailEl) emailEl.textContent = user.email || "";
 
-        const initials = name.trim().split(/\s+/).filter(Boolean).map(part => part[0]).join("").slice(0, 2).toUpperCase() || "U";
-        if (avatarEl) avatarEl.textContent = initials;
-        if (topbarAvatarEl) topbarAvatarEl.textContent = initials.slice(0, 1);
+        // ✅ WITH THIS (Renders picture or falls back to initials):
+const initials = name.trim().split(/\s+/).filter(Boolean).map(part => part[0]).join("").slice(0, 2).toUpperCase() || "U";
+
+function renderAvatar(el, pic, text) {
+    if (!el) return;
+    el.replaceChildren();
+    if (pic) {
+        const img = document.createElement("img");
+        img.src = pic;
+        img.alt = "Avatar";
+        img.className = "avatar-img";
+        img.onerror = () => { el.textContent = text; };
+        el.appendChild(img);
+    } else {
+        el.textContent = text;
+    }
+}
+
+renderAvatar(avatarEl, user.profile_picture, initials);
+renderAvatar(topbarAvatarEl, user.profile_picture, initials.slice(0, 1));
 
         // Pre-fill form inputs
         const nameParts = name.trim().split(/\s+/).filter(Boolean);

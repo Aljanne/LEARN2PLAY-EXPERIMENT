@@ -1,10 +1,14 @@
 import os
 import re
 import uuid
+from datetime import timedelta
+from decimal import Decimal, InvalidOperation
+from functools import wraps
 from pathlib import Path
 
 from flask import (
     Blueprint,
+    abort,
     current_app,
     jsonify,
     redirect,
@@ -24,15 +28,16 @@ from sqlalchemy.exc import IntegrityError
 from werkzeug.utils import secure_filename
 
 from extensions import db
-from models import Credential, RoleApplication, User, utcnow
+from models import Appointment, Credential, RoleApplication, User, utcnow
 
-
-# All routes in this blueprint will be registered under these URLs.
 main = Blueprint("main", __name__)
 
-# ---------- registration rules ----------
-ALLOWED_ROLES = {"student", "mentor", "coach"}   # "mentor" is shown as "Teacher"
-VERIFIED_ROLES = {"mentor", "coach"}             # need admin approval
+# ---------- Application Configuration & Central Currency ----------
+ALLOWED_ROLES = {"student", "mentor", "coach"}   # "mentor" is displayed to users as "Teacher"
+VERIFIED_ROLES = set()                           # require admin review if configured
+
+CURRENCY_CODE = "PHP"
+CURRENCY_SYMBOL = "₱"
 
 EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 LINK_RE = re.compile(r"^https?://\S+\.\S+$", re.I)
@@ -40,7 +45,7 @@ LINK_RE = re.compile(r"^https?://\S+\.\S+$", re.I)
 MAX_FILES = 5
 MAX_FILE_BYTES = 5 * 1024 * 1024
 MAX_LINKS = 5
-# extension -> bytes the file must actually start with
+
 FILE_SIGNATURES = {
     "pdf": (b"%PDF-",),
     "jpg": (b"\xff\xd8\xff",),
@@ -49,9 +54,88 @@ FILE_SIGNATURES = {
 }
 
 
-# ---------- helpers ----------
+# ---------- Rate & Timezone Helpers ----------
+def parse_rate(raw_value):
+    """
+    Parses rate input:
+    - None or "" -> None (Rate not set)
+    - Valid number -> Decimal rounded to 2 places
+    Raises ValueError on negative, non-finite, or excessively large amounts (> 50,000).
+    """
+    if raw_value is None or str(raw_value).strip() == "":
+        return None
+    try:
+        val = Decimal(str(raw_value).strip())
+    except (InvalidOperation, TypeError, ValueError):
+        raise ValueError("Rate must be a valid number.")
+
+    if not val.is_finite():
+        raise ValueError("Rate must be a finite number.")
+    if val < 0:
+        raise ValueError("Rate cannot be negative.")
+    if val > Decimal("50000"):
+        raise ValueError("Rate cannot exceed ₱50,000 per hour.")
+
+    return val.quantize(Decimal("0.01"))
+
+
+def format_dt_pht(dt):
+    """Formats UTC datetime into Philippine Standard Time (PHT, UTC+8)."""
+    if not dt:
+        return ""
+    pht = dt + timedelta(hours=8)
+    return pht.strftime("%b %d, %Y at %I:%M %p")
+
+
+def format_time_range_pht(dt, duration_minutes):
+    """Formats start time to end time range in PHT."""
+    if not dt:
+        return ""
+    start_pht = dt + timedelta(hours=8)
+    end_pht = start_pht + timedelta(minutes=duration_minutes or 60)
+    return f"{start_pht.strftime('%I:%M %p')} – {end_pht.strftime('%I:%M %p')}"
+
+
+# ---------- Decorators ----------
+def admin_required(view):
+    @wraps(view)
+    @login_required
+    def wrapped(*args, **kwargs):
+        if not current_user.is_admin:
+            return error("Administrator access required.", 403)
+        return view(*args, **kwargs)
+    return wrapped
+
+
+def provider_required(view):
+    @wraps(view)
+    @login_required
+    def wrapped(*args, **kwargs):
+        if not any(r in current_user.roles for r in ("mentor", "coach")):
+            if request.is_json or request.path.startswith("/api/"):
+                return error("Teacher or Coach role required.", 403)
+            abort(403)
+        return view(*args, **kwargs)
+    return wrapped
+
+
+# ---------- User Serializer ----------
 def user_data(user):
-    """Consistent user response for the frontend."""
+    """Consistent user response for frontend consumption."""
+    # Compute real dynamic statistics from database appointments
+    sessions_count = 0
+    total_minutes = 0
+    mentors_met = set()
+
+    try:
+        completed_provided = Appointment.query.filter_by(provider_id=user.id, status="completed").all()
+        completed_attended = Appointment.query.filter_by(student_id=user.id, status="completed").all()
+        sessions_count = len(completed_provided) + len(completed_attended)
+        total_minutes = sum(a.duration_minutes for a in completed_provided + completed_attended)
+        mentors_met = {a.provider_id for a in completed_attended}
+    except Exception:
+        pass
+
     return {
         "id": user.id,
         "name": user.display_name,
@@ -61,26 +145,29 @@ def user_data(user):
         "bio": user.bio or "",
         "profile_picture": user.profile_picture,
         "topics": getattr(user, "topics", []),
-        # Actual dynamic activity stats (starts at 0)
+        "teaching_rate": float(user.teaching_rate) if user.teaching_rate is not None else None,
+        "coaching_rate": float(user.coaching_rate) if user.coaching_rate is not None else None,
+        "hourly_rate": float(user.teaching_rate if user.teaching_rate is not None else (user.coaching_rate if user.coaching_rate is not None else (user.hourly_rate or 300))),
+        "currency": CURRENCY_CODE,
+        "currency_symbol": CURRENCY_SYMBOL,
         "stats": {
-            "sessions_count": 0,
-            "mentors_count": 0,
-            "hours_count": 0,
-            "avg_rating": 0.0,
+            "sessions_count": sessions_count,
+            "mentors_count": len(mentors_met),
+            "hours_count": round(total_minutes / 60, 1),
+            "avg_rating": 5.0 if sessions_count > 0 else 0.0,
         },
     }
+
 
 def error(message, status=400, field=None):
     return jsonify({"ok": False, "message": message, "field": field}), status
 
 
 def credentials_folder(user_id):
-    # Lives in the instance folder (NOT /static) so proofs are never public.
     return Path(current_app.instance_path) / "credentials" / str(user_id)
 
 
 def check_upload(file):
-    """Return (extension, None) if the file is fine, else (None, message)."""
     name = secure_filename(file.filename or "")
     ext = name.rsplit(".", 1)[-1].lower() if "." in name else ""
 
@@ -102,45 +189,28 @@ def check_upload(file):
     return ext, None
 
 
-def admin_required(view):
-    from functools import wraps
-
-    @wraps(view)
-    @login_required
-    def wrapped(*args, **kwargs):
-        if not current_user.is_admin:
-            return error("Administrator access required.", 403)
-        return view(*args, **kwargs)
-
-    return wrapped
-
-
-# ---------- pages ----------
+# ---------- Static & Auth Pages ----------
 @main.route("/")
 def home():
     return redirect(url_for("main.auth_page"))
 
 
-# Log in page (login only).
 @main.route("/auth")
 def auth_page():
     return render_template("auth.html")
 
 
-# Registration page (separate from login).
 @main.route("/register")
 def register_page():
     return render_template("register.html")
 
 
-# Get a CSRF token before sending POST requests.
 @main.route("/api/csrf-token", methods=["GET"])
 def csrf_token():
     return jsonify({"csrf_token": generate_csrf()})
 
 
-# ---------- register ----------
-# Accepts multipart/form-data so teachers and coaches can upload proof.
+# ---------- Register & Login API ----------
 @main.route("/api/auth/register", methods=["POST"])
 def register():
     form = request.form
@@ -151,19 +221,14 @@ def register():
     confirm = form.get("confirm_password") or ""
     roles = set(form.getlist("roles"))
 
-    # --- common fields ---
     if not roles or not roles <= ALLOWED_ROLES:
         return error("Choose at least one valid role.", field="roles")
-
     if not 2 <= len(name) <= 80:
         return error("Enter your full name (2 to 80 characters).", field="name")
-
     if not EMAIL_RE.match(email):
         return error("Enter a valid email address.", field="email")
-
     if len(email) > 120:
         return error("Email must not exceed 120 characters.", field="email")
-
     if (
         len(password) < 8
         or not re.search(r"[a-z]", password)
@@ -174,24 +239,13 @@ def register():
             "Use at least 8 characters, with upper and lower case letters and a number.",
             field="password",
         )
-
     if password != confirm:
         return error("Passwords don't match.", field="confirmPassword")
-
     if form.get("acknowledged") != "true":
-        return error(
-            "Confirm that you understand the review before you continue.",
-            field="ack",
-        )
-
+        return error("Confirm that you understand the review before you continue.", field="ack")
     if User.query.filter_by(email=email).first():
-        return error(
-            "That email is already registered. Try logging in instead.",
-            409,
-            field="email",
-        )
+        return error("That email is already registered. Try logging in instead.", 409, field="email")
 
-    # --- teacher / coach credentials ---
     needs_review = bool(roles & VERIFIED_ROLES)
     bio, links, checked_files = "", [], []
 
@@ -201,21 +255,13 @@ def register():
         uploads = [f for f in request.files.getlist("proofs") if f and f.filename]
 
         if not uploads:
-            return error(
-                "Upload at least one certificate, license, diploma or award.",
-                field="proofs",
-            )
+            return error("Upload at least one certificate, license, diploma or award.", field="proofs")
         if len(uploads) > MAX_FILES:
             return error(f"You can upload up to {MAX_FILES} files.", field="proofs")
         if not 50 <= len(bio) <= 1500:
             return error("Describe your experience in 50 to 1500 characters.", field="bio")
-        if len(links) > MAX_LINKS or any(
-            not LINK_RE.match(link) or len(link) > 300 for link in links
-        ):
-            return error(
-                f"Links must start with http:// or https:// (max {MAX_LINKS}).",
-                field="links",
-            )
+        if len(links) > MAX_LINKS or any(not LINK_RE.match(link) or len(link) > 300 for link in links):
+            return error(f"Links must start with http:// or https:// (max {MAX_LINKS}).", field="links")
 
         for f in uploads:
             ext, problem = check_upload(f)
@@ -223,18 +269,15 @@ def register():
                 return error(problem, field="proofs")
             checked_files.append((f, ext))
 
-    # --- save everything together ---
     saved_paths = []
     try:
-        # Only roles that need no review are active right away.
         active_roles = sorted(roles - VERIFIED_ROLES)
-
         user = User(display_name=name, email=email)
         user.set_password(password)
         user.roles = active_roles
 
         db.session.add(user)
-        db.session.flush()  # gives us user.id
+        db.session.flush()
 
         if needs_review:
             folder = credentials_folder(user.id)
@@ -265,11 +308,7 @@ def register():
         db.session.rollback()
         for path in saved_paths:
             path.unlink(missing_ok=True)
-        return error(
-            "That email is already registered. Try logging in instead.",
-            409,
-            field="email",
-        )
+        return error("That email is already registered. Try logging in instead.", 409, field="email")
 
     except Exception:
         db.session.rollback()
@@ -278,7 +317,6 @@ def register():
         current_app.logger.exception("Registration failed")
         return error("We couldn't create your account. Please try again.", 500)
 
-    # --- response ---
     if not needs_review:
         login_user(user)
         return jsonify({
@@ -289,16 +327,12 @@ def register():
             "user": user_data(user),
         }), 201
 
-    if active_roles:  # e.g. Student + Teacher: use the site as a student meanwhile
+    if active_roles:
         login_user(user)
         return jsonify({
             "ok": True,
             "pending": True,
-            "message": (
-                "Your registration is pending admin review. We'll verify your "
-                "credentials and activate your teacher/coach role once approved. "
-                "You can use your account as a student in the meantime."
-            ),
+            "message": "Your registration is pending admin review. You can use your account as a student in the meantime.",
             "redirect": url_for("main.dashboard"),
             "user": user_data(user),
         }), 201
@@ -306,24 +340,14 @@ def register():
     return jsonify({
         "ok": True,
         "pending": True,
-        "message": (
-            "Your registration is pending admin review. We'll verify your "
-            "credentials and email you once your teacher/coach role is approved."
-        ),
+        "message": "Your registration is pending admin review. We'll verify your credentials and email you once approved.",
         "redirect": url_for("main.auth_page"),
     }), 201
 
 
-@main.app_errorhandler(413)
-def upload_too_large(_error):
-    return error("Your upload is too large. Keep each file under 5 MB.", 413, field="proofs")
-
-
-# ---------- login ----------
 @main.route("/api/auth/login", methods=["POST"])
 def login():
     data = request.get_json(silent=True) or {}
-
     email = data.get("email", "")
     password = data.get("password", "")
     remember = data.get("remember", False)
@@ -336,23 +360,16 @@ def login():
 
     if not user or not user.check_password(password):
         return error("Incorrect email or password.", 401)
-
     if not user.is_active:
         return error("This account is inactive.", 403)
 
-    # Teacher/coach-only accounts have no active role until an admin approves.
     if not user.roles:
         pending = RoleApplication.query.filter_by(user_id=user.id, status="pending").first()
         if pending:
-            return error(
-                "Your registration is still pending admin review. "
-                "We'll let you know once it's approved.",
-                403,
-            )
+            return error("Your registration is still pending admin review.", 403)
         return error("Your teacher/coach application was not approved.", 403)
 
     login_user(user, remember=remember is True)
-
     return jsonify({
         "ok": True,
         "message": "Logged in successfully.",
@@ -360,7 +377,6 @@ def login():
     })
 
 
-# Log out the current user.
 @main.route("/api/auth/logout", methods=["POST"])
 @login_required
 def logout():
@@ -368,16 +384,14 @@ def logout():
     return jsonify({"ok": True, "message": "Logged out successfully."})
 
 
-# Check whether a user is logged in.
 @main.route("/api/me", methods=["GET"])
 def get_current_user():
     if not current_user.is_authenticated:
         return error("You are not logged in.", 401)
-
     return jsonify({"ok": True, "user": user_data(current_user)})
 
 
-# ---------- admin: review teacher / coach applications ----------
+# ---------- Admin Endpoints ----------
 @main.route("/api/admin/applications", methods=["GET"])
 @admin_required
 def list_applications():
@@ -442,23 +456,20 @@ def review_application(application_id, action):
     return jsonify({"ok": True, "message": f"Application {app_row.status}."})
 
 
-# Admin-only download of submitted proof.
 @main.route("/admin/credentials/<int:credential_id>")
 @admin_required
 def download_credential(credential_id):
     cred = db.session.get(Credential, credential_id)
     if not cred:
         return error("File not found.", 404)
-
     return send_from_directory(
         credentials_folder(cred.user_id),
         cred.stored_name,
         download_name=cred.original_name,
     )
 
-# ============================================================
-# ---------- settings & account management APIs --------------
-# ============================================================
+
+# ---------- Profile Management APIs (Requirements 2 & 3) ----------
 @main.route("/api/profile", methods=["POST"])
 @login_required
 def update_profile():
@@ -470,14 +481,65 @@ def update_profile():
     if not (2 <= len(name) <= 80):
         return error("Enter your full name (2 to 80 characters).", field="name")
 
+    is_mentor = "mentor" in current_user.roles
+    is_coach = "coach" in current_user.roles
+
+    # Validate and handle rates
+    parsed_teaching_rate = None
+    has_teaching_rate = "teaching_rate" in data
+
+    if has_teaching_rate:
+        if not is_mentor:
+            return error("Only approved Teachers can set a teaching rate.", 403, field="teaching_rate")
+        try:
+            parsed_teaching_rate = parse_rate(data["teaching_rate"])
+        except ValueError as ex:
+            return error(str(ex), 400, field="teaching_rate")
+
+    parsed_coaching_rate = None
+    has_coaching_rate = "coaching_rate" in data
+
+    if has_coaching_rate:
+        if not is_coach:
+            return error("Only approved Coaches can set a coaching rate.", 403, field="coaching_rate")
+        try:
+            parsed_coaching_rate = parse_rate(data["coaching_rate"])
+        except ValueError as ex:
+            return error(str(ex), 400, field="coaching_rate")
+
+    # Legacy rate parameter compatibility
+    if "hourly_rate" in data and not has_teaching_rate and not has_coaching_rate:
+        if not (is_mentor or is_coach):
+            return error("Only teachers and coaches can set hourly rates.", 403, field="hourly_rate")
+        try:
+            legacy_val = parse_rate(data["hourly_rate"])
+            if is_mentor:
+                parsed_teaching_rate = legacy_val
+                has_teaching_rate = True
+            if is_coach:
+                parsed_coaching_rate = legacy_val
+                has_coaching_rate = True
+        except ValueError as ex:
+            return error(str(ex), 400, field="hourly_rate")
+
     try:
         current_user.display_name = name
+
         if bio is not None:
-            current_user.bio = str(bio).strip()
+            current_user.bio = str(bio).strip()[:500]
         if topics is not None:
             current_user.topics = topics
 
-        # Only touch profile_picture if specifically sent
+        if has_teaching_rate:
+            current_user.teaching_rate = parsed_teaching_rate
+            if parsed_teaching_rate is not None:
+                current_user.hourly_rate = int(parsed_teaching_rate)
+
+        if has_coaching_rate:
+            current_user.coaching_rate = parsed_coaching_rate
+            if parsed_coaching_rate is not None and not has_teaching_rate:
+                current_user.hourly_rate = int(parsed_coaching_rate)
+
         if "profile_picture" in data and data["profile_picture"] is not None:
             pic = str(data["profile_picture"]).strip()
             current_user.profile_picture = pic if pic else None
@@ -488,16 +550,13 @@ def update_profile():
             "message": "Profile updated successfully.",
             "user": user_data(current_user),
         })
+
     except Exception:
         db.session.rollback()
-        current_app.logger.exception("Profile update error")
+        current_app.logger.exception("Failed to update profile")
         return error("Failed to save changes. Please try again.", 500)
 
-import os
-import uuid
-from werkzeug.utils import secure_filename
 
-# Upload endpoint for cropped profile pictures
 @main.route("/api/profile/avatar", methods=["POST"])
 @login_required
 def upload_avatar():
@@ -508,23 +567,19 @@ def upload_avatar():
     if not file or not file.filename:
         return error("Please select an image.")
 
-    # Validate image extension
     allowed = {"jpg", "jpeg", "png", "webp"}
     ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
     if ext not in allowed:
         return error("Only JPG, PNG, and WebP images are allowed.")
 
     try:
-        # Create static/uploads/avatars directory if it doesn't exist
         upload_dir = Path(current_app.static_folder) / "uploads" / "avatars"
         upload_dir.mkdir(parents=True, exist_ok=True)
 
-        # Unique file name (e.g. user_2_a1b2c3d4.jpg)
         filename = f"user_{current_user.id}_{uuid.uuid4().hex[:8]}.{ext}"
         filepath = upload_dir / filename
         file.save(filepath)
 
-        # Save relative URL to database (e.g. /static/uploads/avatars/user_2_abc.jpg)
         avatar_url = url_for("static", filename=f"uploads/avatars/{filename}")
         current_user.profile_picture = avatar_url
         db.session.commit()
@@ -532,14 +587,14 @@ def upload_avatar():
         return jsonify({
             "ok": True,
             "message": "Avatar uploaded successfully.",
-            "profile_picture": avatar_url
+            "profile_picture": avatar_url,
         })
     except Exception:
         db.session.rollback()
         current_app.logger.exception("Avatar upload failed")
         return error("Failed to save avatar image.", 500)
 
-# 2. Update password
+
 @main.route("/api/account/password", methods=["POST"])
 @login_required
 def update_password():
@@ -549,12 +604,8 @@ def update_password():
 
     if not current_pw or not new_pw:
         return error("Please provide both your current and new password.")
-
-    # Check old password using User model's check_password()
     if not current_user.check_password(current_pw):
         return error("Your current password is incorrect.", 403, field="currentPassword")
-
-    # Password complexity validation (same rules as your registration)
     if (
         len(new_pw) < 8
         or not re.search(r"[a-z]", new_pw)
@@ -565,24 +616,61 @@ def update_password():
             "Use at least 8 characters, with upper and lower case letters and a number.",
             field="newPassword",
         )
-
     if current_pw == new_pw:
         return error("New password must be different from your current password.", field="newPassword")
 
     try:
         current_user.set_password(new_pw)
         db.session.commit()
-        return jsonify({
-            "ok": True,
-            "message": "Your password has been updated successfully.",
-        })
+        return jsonify({"ok": True, "message": "Your password has been updated successfully."})
     except Exception:
         db.session.rollback()
-        current_app.logger.exception("Password update error")
         return error("Failed to update password. Please try again.", 500)
 
 
-# 3. Export Personal Data (for the Download Archive button)
+# ---------- Provider Directory API ----------
+@main.route("/api/tutors", methods=["GET"])
+def get_registered_tutors():
+    users = User.query.filter_by(is_active=True).all()
+    tutors = []
+
+    for u in users:
+        roles = u.roles
+        is_mentor = "mentor" in roles
+        is_coach = "coach" in roles
+
+        if is_mentor or is_coach:
+            category = "academic" if is_mentor and not is_coach else ("gaming" if is_coach and not is_mentor else "both")
+            role_label = "Academic Teacher" if is_mentor and not is_coach else ("Gaming Coach" if is_coach and not is_mentor else "Teacher & Coach")
+
+            display_rate = None
+            if is_mentor and u.teaching_rate is not None:
+                display_rate = float(u.teaching_rate)
+            elif is_coach and u.coaching_rate is not None:
+                display_rate = float(u.coaching_rate)
+            elif u.hourly_rate is not None:
+                display_rate = float(u.hourly_rate)
+
+            tutors.append({
+                "id": u.id,
+                "name": u.display_name,
+                "category": category,
+                "role_label": role_label,
+                "bio": u.bio or "Verified Learn2Play educator in Naga City.",
+                "topics": u.topics if hasattr(u, "topics") else [],
+                "profile_picture": u.profile_picture,
+                "teaching_rate": float(u.teaching_rate) if u.teaching_rate is not None else None,
+                "coaching_rate": float(u.coaching_rate) if u.coaching_rate is not None else None,
+                "price": display_rate if display_rate is not None else 300,
+                "currency": CURRENCY_CODE,
+                "currency_symbol": CURRENCY_SYMBOL,
+                "rating": 5.0,
+                "reviews": 0,
+            })
+
+    return jsonify({"ok": True, "tutors": tutors})
+
+
 @main.route("/api/account/export", methods=["GET"])
 @login_required
 def export_user_data():
@@ -608,7 +696,6 @@ def export_user_data():
     return response
 
 
-# 4. Deactivate Account
 @main.route("/api/account/deactivate", methods=["POST"])
 @login_required
 def deactivate_account():
@@ -625,12 +712,141 @@ def deactivate_account():
         db.session.rollback()
         return error("Failed to deactivate account.", 500)
 
-# ---------- app pages ----------
+
+# ---------- Provider Schedule API (Requirement 4) ----------
+@main.route("/api/schedule", methods=["GET"])
+@provider_required
+def get_provider_schedule_api():
+    now = utcnow()
+    appointments = (
+        Appointment.query.filter_by(provider_id=current_user.id)
+        .order_by(Appointment.start_time.asc())
+        .all()
+    )
+
+    items = []
+    for appt in appointments:
+        student = appt.student
+        items.append({
+            "id": appt.id,
+            "student_id": appt.student_id,
+            "student_name": student.display_name if student else "Student",
+            "student_avatar": student.profile_picture if student else None,
+            "topic": appt.topic,
+            "role": appt.role,
+            "role_label": "Academic" if appt.role == "mentor" else "Gaming",
+            "status": appt.status,
+            "start_time_iso": appt.start_time.isoformat(),
+            "start_time_formatted": format_dt_pht(appt.start_time),
+            "time_range": format_time_range_pht(appt.start_time, appt.duration_minutes),
+            "duration_minutes": appt.duration_minutes,
+            "price": float(appt.price) if appt.price is not None else None,
+            "currency": appt.currency or CURRENCY_CODE,
+            "location_type": appt.location_type or "Online",
+            "meeting_link": appt.meeting_link or "",
+            "notes": appt.notes or "",
+            "is_upcoming": appt.status == "scheduled" and appt.start_time >= now,
+        })
+
+    return jsonify({"ok": True, "appointments": items, "timezone": "Philippine Time (PHT, UTC+8)"})
+
+
+# ---------- Frontend View Routes ----------
 @main.route("/dashboard", methods=["GET"])
 @login_required
 def dashboard():
-    return render_template("dashboard.html")
+    next_session = None
+    prev_session = None
 
+    if any(r in current_user.roles for r in ("mentor", "coach")):
+        now = utcnow()
+        # Actual upcoming session
+        next_session = (
+            Appointment.query.filter_by(provider_id=current_user.id, status="scheduled")
+            .filter(Appointment.start_time >= now)
+            .order_by(Appointment.start_time.asc())
+            .first()
+        )
+        # Actual previous session
+        prev_session = (
+            Appointment.query.filter_by(provider_id=current_user.id)
+            .filter((Appointment.status == "completed") | ((Appointment.status == "scheduled") & (Appointment.start_time < now)))
+            .order_by(Appointment.start_time.desc())
+            .first()
+        )
+
+    return render_template(
+        "dashboard.html",
+        next_session=next_session,
+        prev_session=prev_session,
+        format_dt_pht=format_dt_pht,
+    )
+
+
+@main.route("/schedule")
+@provider_required
+def schedule():
+    now = utcnow()
+
+    # Nearest upcoming scheduled sessions
+    upcoming = (
+        Appointment.query.filter_by(provider_id=current_user.id, status="scheduled")
+        .filter(Appointment.start_time >= now)
+        .order_by(Appointment.start_time.asc())
+        .all()
+    )
+
+    # Past completed sessions or past scheduled sessions
+    past = (
+        Appointment.query.filter_by(provider_id=current_user.id)
+        .filter(
+            (Appointment.status == "completed")
+            | ((Appointment.status == "scheduled") & (Appointment.start_time < now))
+        )
+        .order_by(Appointment.start_time.desc())
+        .all()
+    )
+
+    # Cancelled sessions
+    cancelled = (
+        Appointment.query.filter_by(provider_id=current_user.id, status="cancelled")
+        .order_by(Appointment.start_time.desc())
+        .all()
+    )
+
+    return render_template(
+        "schedule.html",
+        upcoming=upcoming,
+        past=past,
+        cancelled=cancelled,
+        total_count=len(upcoming) + len(past) + len(cancelled),
+        format_dt_pht=format_dt_pht,
+        format_time_range_pht=format_time_range_pht,
+        timezone_label="Philippine Time (PHT, UTC+8)",
+    )
+
+@main.route("/tutors/<int:user_id>")
+@login_required
+def view_tutor_profile(user_id):
+    tutor = db.session.get(User, user_id)
+    # Ensure user exists, is active, and is actually a teacher or coach
+    if not tutor or not tutor.is_active or not any(r in tutor.roles for r in ("mentor", "coach")):
+        abort(404)
+
+    is_mentor = "mentor" in tutor.roles
+    is_coach = "coach" in tutor.roles
+    role_label = (
+        "Academic Teacher & Gaming Coach" if is_mentor and is_coach
+        else ("Academic Teacher" if is_mentor else "Gaming Coach")
+    )
+
+    return render_template(
+        "tutor_profile.html",
+        tutor=tutor,
+        role_label=role_label,
+        is_mentor=is_mentor,
+        is_coach=is_coach,
+    )
 
 @main.route("/profile")
 @login_required

@@ -3721,6 +3721,665 @@ body.profile-body {
   display: block !important;
 }
 
+/* ============================================================
+   SESSIONS EMPTY STATE STYLES (Appended to styles.css)
+   ============================================================ */
+.sessions-empty-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 48px 20px;
+  gap: 8px;
+}
+
+.sessions-empty-box .empty-icon {
+  font-size: 32px;
+  margin-bottom: 4px;
+}
+
+.sessions-empty-box h3 {
+  color: var(--txt);
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.sessions-empty-box p {
+  color: var(--txt3);
+  font-size: 13.5px;
+  max-width: 440px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ============================================================
+   DASHBOARD SEARCH HERO (Appended to styles.css)
+   ============================================================ */
+.dashboard-search-hero {
+  background: radial-gradient(circle at 50% 20%, rgba(124, 108, 245, 0.15) 0%, transparent 70%),
+              linear-gradient(180deg, #131522 0%, #0e1016 100%);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 40px 24px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.search-hero-inner {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.dashboard-search-hero h1 {
+  color: #fff;
+  font-size: 26px;
+  font-weight: 700;
+  margin-top: 10px;
+}
+
+.dashboard-search-hero p {
+  color: var(--txt2);
+  font-size: 14px;
+  margin-top: 6px;
+}
+
+.dash-search-box {
+  position: relative;
+  max-width: 580px;
+  margin: 22px auto 0;
+}
+
+.dash-search-box svg {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  stroke: var(--txt3);
+}
+
+.dash-search-box input {
+  width: 100%;
+  padding: 13px 18px 13px 46px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+
+.dash-search-box input:focus {
+  border-color: var(--purple);
+  box-shadow: 0 0 0 3px rgba(124, 108, 245, 0.22);
+}
+
+.settings-avatar-circle {
+  overflow: hidden !important;
+}
+
+.settings-avatar-circle img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: 50% !important;
+  display: block !important;
+}
+
+/* ============================================================
+   COOL NAVBAR ANIMATIONS & PAGE TRANSITIONS
+   ============================================================ */
+
+/* 1. Navbar Items with Glowing Spring Underline */
+.tb-nav {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.tb-nav a {
+  position: relative;
+  color: var(--txt2);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  padding: 8px 4px;
+  transition: color 0.22s ease, text-shadow 0.22s ease;
+}
+
+/* The Animated Underline (Hidden by default, scales from center) */
+.tb-nav a::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 2.5px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--purple), var(--lavender));
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.28s ease;
+  box-shadow: 0 0 8px rgba(124, 108, 245, 0.4);
+}
+
+/* Hover: expands partially with a glow */
+.tb-nav a:hover {
+  color: #ffffff !important;
+}
+
+.tb-nav a:hover::after {
+  transform: scaleX(0.7);
+  box-shadow: 0 0 12px rgba(124, 108, 245, 0.7);
+}
+
+/* Active Page: Fully extended with strong neon glow */
+.tb-nav a.active {
+  color: #ffffff !important;
+  font-weight: 600;
+  text-shadow: 0 0 12px rgba(124, 108, 245, 0.5);
+}
+
+.tb-nav a.active::after {
+  transform: scaleX(1);
+  background: linear-gradient(90deg, #6656ee, #a99dff);
+  box-shadow: 0 0 12px rgba(124, 108, 245, 0.9), 0 0 20px rgba(169, 157, 255, 0.4);
+}
+
+/* 2. Topbar subtle bottom glow line */
+.topbar {
+  position: relative;
+}
+
+.topbar::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(124, 108, 245, 0.35) 50%, transparent 100%);
+  pointer-events: none;
+}
+
+/* 3. Smooth Page Enter Transition (Makes all pages glide in) */
+@keyframes pageSmoothEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Apply entrance animation to main content containers */
+main,
+.layout,
+.settings-container,
+.profile-page,
+.sessions-page,
+.help-layout {
+  animation: pageSmoothEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Respect users with reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .tb-nav a::after,
+  main,
+  .layout,
+  .settings-container,
+  .profile-page,
+  .sessions-page,
+  .help-layout {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ============================================================
+   SIDEBAR FIX & MENTOR SCHEDULE WIDGETS
+   ============================================================ */
+/* 1. Make sidebar stay in its normal place instead of scrolling down */
+.sidebar {
+  position: static !important;
+  top: auto !important;
+}
+
+/* 2. Mini Schedule Cards in Sidebar */
+.side-schedule-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: border-color 0.18s ease;
+}
+.side-schedule-card:hover {
+  border-color: rgba(124, 108, 245, 0.4);
+}
+
+.side-sched-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.sched-pill {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+.sched-pill.upcoming {
+  background: rgba(124, 108, 245, 0.16);
+  color: var(--lavender);
+  border: 1px solid rgba(124, 108, 245, 0.3);
+}
+.sched-pill.completed {
+  background: rgba(74, 222, 128, 0.14);
+  color: #7ceea4;
+  border: 1px solid rgba(74, 222, 128, 0.3);
+}
+
+.sched-time-badge {
+  color: var(--txt3);
+  font-size: 11px;
+}
+
+.side-sched-title {
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.side-sched-sub {
+  color: var(--txt2);
+  font-size: 12px;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.side-sched-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: var(--txt3);
+  font-size: 11px;
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.side-sched-btn {
+  display: inline-block;
+  margin-top: 6px;
+  text-align: center;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--lavender);
+  background: rgba(124, 108, 245, 0.12);
+  border: 1px solid rgba(124, 108, 245, 0.3);
+  border-radius: 6px;
+  padding: 6px;
+  text-decoration: none;
+  transition: all 0.18s ease;
+}
+.side-sched-btn:hover {
+  background: var(--purple);
+  color: #fff;
+}
+
+/* ============================================================
+   PROVIDER SCHEDULE & RATES STYLES (Requirements 1, 3, 4)
+   ============================================================ */
+.schedule-page {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 24px 20px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.schedule-back-row {
+  margin-bottom: 2px;
+}
+
+.schedule-header {
+  background: radial-gradient(circle at 50% 20%, rgba(124, 108, 245, 0.14) 0%, transparent 70%),
+              linear-gradient(180deg, #131522 0%, #0e1016 100%);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 30px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.schedule-header-text h1 {
+  color: #fff;
+  font-size: 26px;
+  font-weight: 700;
+  margin-top: 8px;
+}
+
+.schedule-header-text p {
+  color: var(--txt2);
+  font-size: 13.5px;
+  margin-top: 6px;
+  max-width: 620px;
+  line-height: 1.5;
+}
+
+.schedule-tz-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(124, 108, 245, 0.12);
+  border: 1px solid rgba(124, 108, 245, 0.35);
+  padding: 8px 14px;
+  border-radius: 10px;
+  color: var(--lavender);
+  font-size: 12.5px;
+  flex-shrink: 0;
+}
+
+.tz-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 8px #4ade80;
+}
+
+.schedule-stats-bar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.stat-summary-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-sum-label {
+  color: var(--txt3);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.stat-sum-val {
+  color: #fff;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.stat-summary-card small {
+  color: var(--txt3);
+  font-size: 11px;
+}
+
+.schedule-panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.schedule-tab-nav {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.sched-tab-btn {
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--txt2);
+  padding: 9px 18px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.sched-tab-btn:hover {
+  background: rgba(124, 108, 245, 0.14);
+  color: #fff;
+}
+
+.sched-tab-btn.active {
+  background: var(--purple);
+  border-color: var(--purple);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(124, 108, 245, 0.35);
+}
+
+.schedule-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.schedule-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 18px;
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  transition: border-color 0.18s ease;
+}
+
+.schedule-card:hover {
+  border-color: rgba(124, 108, 245, 0.45);
+}
+
+.sched-card-date {
+  background: rgba(124, 108, 245, 0.14);
+  border: 1px solid rgba(124, 108, 245, 0.3);
+  border-radius: 12px;
+  width: 70px;
+  height: 70px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--lavender);
+  flex-shrink: 0;
+}
+
+.sched-card-date.past-date {
+  background: rgba(74, 222, 128, 0.12);
+  border-color: rgba(74, 222, 128, 0.3);
+  color: #7ceea4;
+}
+
+.sched-card-date.cancelled-date {
+  background: rgba(248, 113, 113, 0.12);
+  border-color: rgba(248, 113, 113, 0.3);
+  color: var(--danger);
+}
+
+.sc-day {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.sc-month {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.sched-card-main {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sched-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.sched-student-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sched-student-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7c6cf5, #ec4899);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.sched-student-name {
+  color: #fff;
+  font-size: 14.5px;
+  font-weight: 600;
+  display: block;
+}
+
+.sched-student-email {
+  color: var(--txt3);
+  font-size: 11.5px;
+}
+
+.sched-topic-title {
+  color: var(--txt);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.sched-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px 16px;
+  padding: 10px 14px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  font-size: 12.5px;
+}
+
+.sched-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sched-meta-item span {
+  color: var(--txt3);
+}
+
+.sched-meta-item strong {
+  color: var(--txt);
+}
+
+.sched-notes-box {
+  font-size: 12px;
+  color: var(--txt2);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 8px 12px;
+  border-radius: 7px;
+  border-left: 2px solid var(--purple);
+}
+
+.schedule-empty-state {
+  text-align: center;
+  padding: 48px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.schedule-empty-state h3 {
+  color: #fff;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.schedule-empty-state p {
+  color: var(--txt3);
+  font-size: 13.5px;
+  max-width: 460px;
+  line-height: 1.5;
+}
+
+.side-sched-empty-card {
+  padding: 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+@media (max-width: 768px) {
+  .schedule-stats-bar {
+    grid-template-columns: 1fr;
+  }
+  .schedule-card {
+    grid-template-columns: 1fr;
+  }
+  .sched-card-date {
+    width: 100%;
+    height: 44px;
+    flex-direction: row;
+    gap: 8px;
+  }
+  .sc-month {
+    margin-top: 0;
+  }
+}
+
+/* Keep Settings sidebar stationary in its normal place */
+.settings-sidebar {
+  position: static !important;
+  top: auto !important;
+}
+
 /* ---------- dashboard responsive ---------- */
 @media (max-width: 960px) {
   .tb-nav { display: none; }

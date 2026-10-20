@@ -5,10 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ current_user.display_name }} | Learn2Play Profile</title>
 
-    <!-- Main stylesheet -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-
-    <!-- Free Cropper.js library for interactive image cropping -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 </head>
@@ -23,6 +20,9 @@
 
         <nav class="tb-nav" aria-label="Main navigation">
             <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
+            {% if current_user.is_authenticated and ('mentor' in current_user.roles or 'coach' in current_user.roles) %}
+                <a href="{{ url_for('main.schedule') }}">Schedule</a>
+            {% endif %}
             <a href="{{ url_for('main.sessions') }}">My Sessions</a>
             <a href="{{ url_for('main.profile') }}" class="active">Profile</a>
             <a href="{{ url_for('main.settings') }}">Settings</a>
@@ -53,6 +53,9 @@
                     </div>
 
                     <a href="{{ url_for('main.profile') }}" class="dd-item" role="menuitem">View Profile</a>
+                    {% if current_user.is_authenticated and ('mentor' in current_user.roles or 'coach' in current_user.roles) %}
+                        <a href="{{ url_for('main.schedule') }}" class="dd-item" role="menuitem">Teaching Schedule</a>
+                    {% endif %}
                     <a href="{{ url_for('main.sessions') }}" class="dd-item" role="menuitem">My Sessions</a>
                     <a href="{{ url_for('main.settings') }}" class="dd-item" role="menuitem">Settings</a>
                     <a href="{{ url_for('main.help') }}" class="dd-item" role="menuitem">Help &amp; Support</a>
@@ -114,12 +117,12 @@
             </div>
         </section>
 
-        <!-- Edit Profile Form -->
-        <form class="profile-edit-form hidden" id="profileEditForm">
+        <!-- Edit Profile Form (Requirements 2 & 3) -->
+        <form class="profile-edit-form hidden" id="profileEditForm" novalidate>
             <div class="panel-header">
                 <div>
                     <h2>Edit Your Public Profile</h2>
-                    <p>Update your photo, introduction, and the topics or games you specialize in.</p>
+                    <p>Update your photo, introduction, specialties, and hourly rates.</p>
                 </div>
                 <button type="button" class="close-icon-btn" id="closeEditBtn" aria-label="Close edit form">✕</button>
             </div>
@@ -127,28 +130,66 @@
             <!-- Profile Picture Drag & Drop Zone -->
             <div class="settings-input-group" style="margin-bottom: 16px;">
                 <span class="input-label">Profile Photo</span>
-                
                 <div class="avatar-dropzone" id="avatarDropzone">
                     <input type="file" id="avatarFileInput" accept="image/png, image/jpeg, image/jpg, image/webp" class="sr-only">
                     <div class="dropzone-content">
                         <div class="dropzone-icon">📷</div>
                         <p><strong>Click to browse</strong> or drag and drop an image</p>
-                        <small>PNG, JPG, or WEBP (Max 5MB). You will be able to crop it directly.</small>
+                        <small>PNG, JPG, or WEBP (Max 5MB). Interactive cropping is available.</small>
                     </div>
                 </div>
             </div>
 
+            <!-- Form Row: Name & Roles -->
             <div class="form-grid-2">
                 <label class="settings-input-group">
                     <span class="input-label">Display name *</span>
                     <input id="editName" name="name" type="text" value="{{ current_user.display_name }}" minlength="2" maxlength="80" required>
                 </label>
 
+                <!-- Independent Rate Controls (Requirement 3) -->
+                {% if 'mentor' in current_user.roles and 'coach' in current_user.roles %}
+                    <label class="settings-input-group">
+                        <span class="input-label">Teaching Rate (₱/hr)</span>
+                        <input id="editTeachingRate" name="teaching_rate" type="number" min="0" max="50000" step="10" value="{{ current_user.teaching_rate if current_user.teaching_rate is not none else '' }}" placeholder="Leave blank if not set">
+                    </label>
+                {% elif 'mentor' in current_user.roles %}
+                    <label class="settings-input-group">
+                        <span class="input-label">Teaching Hourly Rate (₱/hr)</span>
+                        <input id="editTeachingRate" name="teaching_rate" type="number" min="0" max="50000" step="10" value="{{ current_user.teaching_rate if current_user.teaching_rate is not none else '' }}" placeholder="Leave blank if not set">
+                    </label>
+                {% elif 'coach' in current_user.roles %}
+                    <label class="settings-input-group">
+                        <span class="input-label">Coaching Hourly Rate (₱/hr)</span>
+                        <input id="editCoachingRate" name="coaching_rate" type="number" min="0" max="50000" step="10" value="{{ current_user.coaching_rate if current_user.coaching_rate is not none else '' }}" placeholder="Leave blank if not set">
+                    </label>
+                {% else %}
+                    <label class="settings-input-group">
+                        <span class="input-label">Topics &amp; Interests</span>
+                        <input id="editTopics" name="topics" type="text" value="{{ current_user.topics | join(', ') if current_user.topics else '' }}" placeholder="e.g. Valorant, Mathematics">
+                    </label>
+                {% endif %}
+            </div>
+
+            <!-- Additional row for dual-role users (Teaching + Coaching) -->
+            {% if 'mentor' in current_user.roles and 'coach' in current_user.roles %}
+            <div class="form-grid-2" style="margin-top: 14px;">
                 <label class="settings-input-group">
-                    <span class="input-label">Topics &amp; Games</span>
-                    <input id="editTopics" name="topics" type="text" value="{{ current_user.topics | join(', ') if current_user.topics else '' }}" placeholder="e.g. Valorant, Mathematics, Calculus, MLBB">
+                    <span class="input-label">Coaching Rate (₱/hr)</span>
+                    <input id="editCoachingRate" name="coaching_rate" type="number" min="0" max="50000" step="10" value="{{ current_user.coaching_rate if current_user.coaching_rate is not none else '' }}" placeholder="Leave blank if not set">
+                </label>
+                <label class="settings-input-group">
+                    <span class="input-label">Specialties &amp; Games</span>
+                    <input id="editTopics" name="topics" type="text" value="{{ current_user.topics | join(', ') if current_user.topics else '' }}" placeholder="e.g. Calculus, Physics, Valorant, MLBB">
                 </label>
             </div>
+            {% elif 'mentor' in current_user.roles or 'coach' in current_user.roles %}
+            <label class="settings-input-group" style="margin-top: 14px;">
+                <span class="input-label">Specialties &amp; Games</span>
+                <input id="editTopics" name="topics" type="text" value="{{ current_user.topics | join(', ') if current_user.topics else '' }}" placeholder="e.g. Calculus, Physics, Valorant, MLBB">
+                <small class="input-hint">Separate subjects and games with commas.</small>
+            </label>
+            {% endif %}
 
             <label class="settings-input-group" style="margin-top: 14px;">
                 <span class="input-label">About You / Introduction</span>
@@ -169,6 +210,39 @@
         <section class="profile-grid-layout">
             <!-- Left Column -->
             <div class="left-col">
+                <!-- Hourly Rates Display Card (Requirement 3) -->
+                {% if 'mentor' in current_user.roles or 'coach' in current_user.roles %}
+                <div class="content-card" id="ratesDisplayCard">
+                    <h3 class="card-heading">Your Hourly Rates</h3>
+                    <div class="meta-list" style="border-top: none; padding-top: 0;">
+                        {% if 'mentor' in current_user.roles %}
+                        <div class="meta-row" style="justify-content: space-between;">
+                            <span>📚 Academic Teaching:</span>
+                            <strong id="profileTeachingRate" style="color: var(--lavender); font-size: 14px;">
+                                {% if current_user.teaching_rate is not none %}
+                                    ₱{{ "%.2f"|format(current_user.teaching_rate) }} / hr
+                                {% else %}
+                                    <em style="color: var(--txt3); font-weight: normal;">Not set</em>
+                                {% endif %}
+                            </strong>
+                        </div>
+                        {% endif %}
+                        {% if 'coach' in current_user.roles %}
+                        <div class="meta-row" style="justify-content: space-between;">
+                            <span>🎮 Gaming Coaching:</span>
+                            <strong id="profileCoachingRate" style="color: #7ceea4; font-size: 14px;">
+                                {% if current_user.coaching_rate is not none %}
+                                    ₱{{ "%.2f"|format(current_user.coaching_rate) }} / hr
+                                {% else %}
+                                    <em style="color: var(--txt3); font-weight: normal;">Not set</em>
+                                {% endif %}
+                            </strong>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
                 <!-- Bio Card -->
                 <div class="content-card">
                     <h3 class="card-heading">About Me</h3>
@@ -191,7 +265,7 @@
                         </div>
                         <div class="meta-row">
                             <span>⚡</span>
-                            <span>Active Learner &amp; Gamer</span>
+                            <span>Active Learner &amp; Educator</span>
                         </div>
                     </div>
                 </div>
@@ -213,11 +287,20 @@
                 <!-- Quick Navigation -->
                 <div class="content-card">
                     <h3 class="card-heading">Quick Navigation</h3>
+                    {% if 'mentor' in current_user.roles or 'coach' in current_user.roles %}
+                    <a href="{{ url_for('main.schedule') }}" class="quick-link">
+                        <span class="ql-icon">📋</span>
+                        <div>
+                            <strong>Teaching &amp; Coaching Schedule</strong>
+                            <small>Manage your student appointments</small>
+                        </div>
+                    </a>
+                    {% endif %}
                     <a href="{{ url_for('main.sessions') }}" class="quick-link">
                         <span class="ql-icon">📅</span>
                         <div>
                             <strong>My Scheduled Sessions</strong>
-                            <small>View upcoming lessons</small>
+                            <small>View booked lessons</small>
                         </div>
                     </a>
                     <a href="{{ url_for('main.dashboard') }}" class="quick-link">
@@ -261,7 +344,7 @@
                     <div class="milestones-empty" id="milestonesEmpty">
                         <div class="milestone-empty-icon">🎯</div>
                         <p class="milestone-empty-title">No recorded milestones yet</p>
-                        <small class="milestone-empty-sub">Once you complete sessions or receive tutor reviews, your milestones will automatically appear here.</small>
+                        <small class="milestone-empty-sub">Once you complete sessions or receive reviews, your milestones will automatically appear here.</small>
                     </div>
                 </div>
             </div>

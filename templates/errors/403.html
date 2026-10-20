@@ -193,16 +193,16 @@
     <div class="error-icon" aria-hidden="true">⛔</div>
     <p class="error-code">ERROR 403</p>
     <h1>Access Denied</h1>
-    <p class="message">You don’t have permission to view this page.</p>
+    <p class="message">{{ message }}</p>
 
     <div class="actions">
-      <a class="button" href="/">Go back</a>
-      <a class="button secondary" href="/dashboard">Go to dashboard</a>
+      <a class="button" href="{{ url_for('main.home') }}">Go back</a>
+      <a class="button secondary" href="{{ url_for('main.dashboard') }}">Go to dashboard</a>
     </div>
 
     <p class="help-note">
       Need help?
-      <a href="/help">Visit the help page</a>
+      <a href="{{ url_for('main.help') }}">Visit the help page</a>
     </p>
   </main>
 </body>

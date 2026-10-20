@@ -3,107 +3,180 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Learn2Play — Dashboard</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css', v='search-animation-2') }}">
+  <title>Dashboard | Learn2Play</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body class="dashboard">
 
-  <!-- ============ Top navbar ============ -->
+  <!-- ============ Consistent Top Navbar ============ -->
   <header class="topbar">
     <a class="tb-brand" href="{{ url_for('main.dashboard') }}">
       <div class="logo">L2</div>
-      <div class="brand-name">Learn2Play</div>
+      <span class="brand-name">Learn2Play</span>
     </a>
 
-    <div class="tb-search">
-      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.8-3.8"/></svg>
-      <input type="text" id="searchInput" placeholder="Search tutors, coaches, subjects…">
-    </div>
+    <!-- Unified Navigation Links -->
+    <nav class="tb-nav" aria-label="Main navigation">
+      <a href="{{ url_for('main.dashboard') }}" class="active">Dashboard</a>
 
+      <!-- Teacher / Coach Provider Schedule Link (Requirement 4) -->
+      {% if current_user.is_authenticated and ('mentor' in current_user.roles or 'coach' in current_user.roles) %}
+        <a href="{{ url_for('main.schedule') }}">Schedule</a>
+      {% endif %}
+
+      <a href="{{ url_for('main.sessions') }}">My Sessions</a>
+      <a href="{{ url_for('main.profile') }}">Profile</a>
+      <a href="{{ url_for('main.settings') }}">Settings</a>
+      <a href="{{ url_for('main.help') }}">Help</a>
+    </nav>
+
+    <!-- User Profile Dropdown -->
     <div class="tb-right">
-      <!-- Student-only top links -->
-      <nav class="tb-nav" data-show-for="student">
-        <a href="{{ url_for('main.dashboard') }}" class="active">Home</a>
-        <a href="#" data-nav="academic">Academic Tutors</a>
-        <a href="#" data-nav="gaming">Gaming Coaches</a>
-        <a href="{{ url_for('main.sessions') }}">My Bookings</a>
-      </nav>
-
-      <!-- Mode switcher: JS shows it only if the user has 2+ roles -->
-      <div class="mode-switch hidden" id="modeSwitch" role="group" aria-label="Dashboard mode">
-        <button class="mode-btn hidden" type="button" data-mode="student">Learning</button>
-        <button class="mode-btn hidden" type="button" data-mode="mentor">Mentoring</button>
-        <button class="mode-btn hidden" type="button" data-mode="coach">Coaching</button>
-      </div>
-
       <div class="tb-profile" id="profileMenu">
-  <button class="tb-avatar" id="userAvatar" type="button"
-          aria-haspopup="menu" aria-expanded="false" aria-controls="profileDropdown"
-          aria-label="Open account menu">JD</button>
+        <button class="tb-avatar" id="userAvatar" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="profileDropdown">
+          {% if current_user.is_authenticated and current_user.profile_picture %}
+            <img src="{{ current_user.profile_picture }}" alt="Avatar" class="avatar-img">
+          {% else %}
+            {{ current_user.display_name[:1] | upper if current_user.is_authenticated and current_user.display_name else 'U' }}
+          {% endif %}
+        </button>
 
-  <div class="dropdown hidden" id="profileDropdown" role="menu">
-    <div class="dd-header">
-      <div class="dd-name" id="menuName">Juan Dela Cruz</div>
-      <div class="dd-email" id="menuEmail">juan@example.com</div>
-      <div class="dd-roles" id="menuRoles"></div>
-    </div>
+        <div class="dropdown hidden" id="profileDropdown" role="menu">
+          <div class="dd-header">
+            <div class="dd-name" id="menuName">{{ current_user.display_name if current_user.is_authenticated else 'Account User' }}</div>
+            <div class="dd-email" id="menuEmail">{{ current_user.email if current_user.is_authenticated else '' }}</div>
+            <div class="dd-roles" id="menuRoles">
+              {% if current_user.is_authenticated and current_user.roles %}
+                {% for role in current_user.roles %}
+                  <span class="pill {{ 'g' if role == 'coach' else 'a' }}">
+                    {{ "Teacher" if role == "mentor" else (role | title) }}
+                  </span>
+                {% endfor %}
+              {% endif %}
+            </div>
+          </div>
 
-    <a class="dd-item" role="menuitem" href="{{ url_for('main.profile') }}">View profile</a>
-<a class="dd-item" role="menuitem" href="{{ url_for('main.sessions') }}">My sessions</a>
-<a class="dd-item" role="menuitem" href="{{ url_for('main.settings') }}">Settings</a>
-<a class="dd-item" role="menuitem" href="{{ url_for('main.help') }}">Help &amp; support</a>
-
-    <div class="dd-sep"></div>
-    <a class="dd-item danger" role="menuitem" href="auth.html" id="logoutBtn">Log out</a>
-  </div>
-</div>
+          <a class="dd-item" role="menuitem" href="{{ url_for('main.profile') }}">View profile</a>
+          {% if current_user.is_authenticated and ('mentor' in current_user.roles or 'coach' in current_user.roles) %}
+            <a class="dd-item" role="menuitem" href="{{ url_for('main.schedule') }}">Teaching Schedule</a>
+          {% endif %}
+          <a class="dd-item" role="menuitem" href="{{ url_for('main.sessions') }}">My sessions</a>
+          <a class="dd-item" role="menuitem" href="{{ url_for('main.settings') }}">Settings</a>
+          <a class="dd-item" role="menuitem" href="{{ url_for('main.help') }}">Help &amp; support</a>
+          <div class="dd-sep"></div>
+          <button type="button" class="dd-item danger" id="logoutBtn" role="menuitem">Log out</button>
+        </div>
+      </div>
     </div>
   </header>
 
+  <!-- ============ Main Layout ============ -->
   <div class="layout">
 
     <!-- ============ Sidebar ============ -->
     <aside class="sidebar">
-
-      <!-- Student mode only: category filters (subjects removed) -->
-      <div class="side-group" data-show-for="student">
-        <div class="side-label">Browse</div>
-        <button class="side-item active" data-cat="all">All</button>
-        <button class="side-item" data-cat="academic">Academic Tutors</button>
+      <!-- Category filters (Browse Mode) -->
+      <div class="side-group">
+        <div class="side-label">Browse Category</div>
+        <button class="side-item active" data-cat="all">All Mentors</button>
+        <button class="side-item" data-cat="academic">Academic Teachers</button>
         <button class="side-item" data-cat="gaming">Gaming Coaches</button>
       </div>
 
-      <!-- Every mode: links to the other pages -->
-      <div class="side-label">Menu</div>
-      <a class="side-item active" href="{{ url_for('main.dashboard') }}" aria-current="page">Dashboard</a>
-      <a class="side-item" href="{{ url_for('main.sessions') }}">Sessions</a>
-      <a class="side-item" href="messages.html">Messages</a>
-      <a class="side-item" href="{{ url_for('main.settings') }}">Settings</a>
+      <!-- Real Database-Backed Schedule for Teachers & Coaches (Requirement 1) -->
+      {% if current_user.is_authenticated and ('mentor' in current_user.roles or 'coach' in current_user.roles) %}
+      <div class="side-group" data-show-for="mentor coach">
+        <div class="side-label">Your Schedule</div>
 
-      <div class="side-cta">
-        <p>New to Learn2Play? Find your perfect tutor or coach today.</p>
-        <a class="cta-btn" href="auth.html#signup">Get Started</a>
+        {% if next_session %}
+          <!-- Real Next Appointment -->
+          <div class="side-schedule-card">
+            <div class="side-sched-header">
+              <span class="sched-pill upcoming">NEXT UP</span>
+              <small class="sched-time-badge">{{ format_dt_pht(next_session.start_time) }}</small>
+            </div>
+            <strong class="side-sched-title">{{ next_session.student.display_name if next_session.student else 'Student' }}</strong>
+            <p class="side-sched-sub">{{ next_session.topic }}</p>
+            <div class="side-sched-meta">
+              <span>⏰ {{ next_session.duration_minutes }} min session</span>
+              <span>📍 {{ next_session.location_type or 'Online' }} • ₱{{ "%.2f"|format(next_session.price) if next_session.price is not none else "Free" }}</span>
+            </div>
+            <a href="{{ url_for('main.schedule') }}" class="side-sched-btn">View Session Details &rarr;</a>
+          </div>
+        {% endif %}
+
+        {% if prev_session %}
+          <!-- Real Previous Session -->
+          <div class="side-schedule-card" style="margin-top: 10px;">
+            <div class="side-sched-header">
+              <span class="sched-pill completed">{{ prev_session.status | upper }}</span>
+              <small class="sched-time-badge">{{ format_dt_pht(prev_session.start_time) }}</small>
+            </div>
+            <strong class="side-sched-title">{{ prev_session.student.display_name if prev_session.student else 'Student' }}</strong>
+            <p class="side-sched-sub">{{ prev_session.topic }}</p>
+            <div class="side-sched-meta">
+              <span>{{ '✅ Completed Session' if prev_session.status == 'completed' else ('Status: ' ~ prev_session.status | title) }}</span>
+              {% if prev_session.price is not none %}
+                <span>💰 ₱{{ "%.2f"|format(prev_session.price) }}</span>
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
+
+        {% if not next_session and not prev_session %}
+          <!-- Honest Empty State for Providers with No Appointments -->
+          <div class="side-schedule-card side-sched-empty-card">
+            <div class="side-sched-header">
+              <span class="sched-pill upcoming">SCHEDULE</span>
+            </div>
+            <strong class="side-sched-title">No scheduled sessions</strong>
+            <p class="side-sched-sub">Your schedule is currently clear.</p>
+            <a href="{{ url_for('main.schedule') }}" class="side-sched-btn">Open Schedule &rarr;</a>
+          </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <!-- Naga City Pilot Info -->
+      <div class="settings-sidebar-badge" style="margin-top: 20px;">
+        <div class="sidebar-badge-dot"></div>
+        <p>Learn2Play · Naga City</p>
       </div>
     </aside>
 
-    <!-- ============ Main content ============ -->
+    <!-- Main Content -->
     <main class="content">
 
-      <!-- Student mode: your tutor grid -->
-      <section id="view-find" data-show-for="student">
-        <div class="grid" id="tutorGrid"></div>
-        <p class="empty hidden" id="emptyState">No tutors match your search — try a different subject or keyword.</p>
+      <!-- Search Hero on Main Page -->
+      <section class="dashboard-search-hero">
+        <div class="search-hero-inner">
+          <span class="pill a">LEARN 2 PLAY</span>
+          <h1>Find Verified Tutors &amp; Gaming Coaches</h1>
+          <p>Book 1-on-1 personalized academic sessions or competitive esports coaching in Naga City.</p>
+          
+          <div class="dash-search-box">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.8-3.8"/></svg>
+            <input type="text" id="searchInput" placeholder="Search by name, subject (e.g. Calculus, Science), or game (e.g. Valorant, MLBB)...">
+          </div>
+        </div>
       </section>
 
-      <!-- Mentor / Coach mode: placeholder overview -->
-      <section id="view-overview" class="hidden" data-show-for="mentor coach">
-        <h2 class="view-title">Overview</h2>
-        <p class="view-note">Upcoming sessions, new requests and earnings will show up here.</p>
-      </section>
+      <!-- Grid of Registered Tutors -->
+      <section class="tutor-grid-section">
+        <div class="grid" id="tutorGrid">
+          <!-- Real registered mentors render here -->
+        </div>
 
+        <!-- Clean Empty State -->
+        <div class="sessions-empty-box hidden" id="emptyState" style="padding: 60px 20px;">
+          <div class="empty-icon">🔍</div>
+          <h3>No mentors found</h3>
+          <p id="emptyStateMsg">There are currently no registered tutors or coaches matching your search. When verified mentors join Learn2Play, they will appear here!</p>
+        </div>
+      </section>
     </main>
   </div>
 
-  <script src="{{ url_for('static', filename='js/script.js', v='search-animation-2') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/script.js') }}" defer></script>
 </body>
 </html>

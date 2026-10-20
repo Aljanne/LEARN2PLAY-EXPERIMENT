@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ tutor.display_name }} | Learn2Play Educator</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body class="dashboard">
+
+  <!-- Top Navbar -->
+  <header class="topbar">
+    <a class="tb-brand" href="{{ url_for('main.dashboard') }}">
+      <div class="logo">L2</div>
+      <span class="brand-name">Learn2Play</span>
+    </a>
+
+    <nav class="tb-nav" aria-label="Main navigation">
+      <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
+      {% if current_user.is_authenticated and ('mentor' in current_user.roles or 'coach' in current_user.roles) %}
+        <a href="{{ url_for('main.schedule') }}">Schedule</a>
+      {% endif %}
+      <a href="{{ url_for('main.sessions') }}">My Sessions</a>
+      <a href="{{ url_for('main.profile') }}">Profile</a>
+      <a href="{{ url_for('main.settings') }}">Settings</a>
+      <a href="{{ url_for('main.help') }}">Help</a>
+    </nav>
+
+    <div class="tb-right">
+      <div class="tb-profile" id="profileMenu">
+        <button class="tb-avatar" id="userAvatar" type="button">
+          {% if current_user.is_authenticated and current_user.profile_picture %}
+            <img src="{{ current_user.profile_picture }}" alt="Avatar" class="avatar-img">
+          {% else %}
+            {{ current_user.display_name[:1] | upper if current_user.is_authenticated and current_user.display_name else 'U' }}
+          {% endif %}
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Public Mentor Profile Container -->
+  <main class="mentor-profile-page">
+    <a href="{{ url_for('main.dashboard') }}" class="settings-back-btn back-dashboard-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+      Back to Browse
+    </a>
+
+    <!-- Hero Card -->
+    <section class="content-card mentor-profile-hero">
+      <div class="mentor-profile-avatar">
+        {% if tutor.profile_picture %}
+          <img src="{{ tutor.profile_picture }}" alt="Avatar" class="avatar-img">
+        {% else %}
+          {{ tutor.display_name[:2] | upper }}
+        {% endif %}
+      </div>
+
+      <div class="mentor-profile-heading">
+        <div class="profile-hero-roles">
+          {% for role in tutor.roles %}
+            {% if role != 'student' %}
+              <span class="role-pill {{ 'gaming' if role == 'coach' else 'academic' }}">
+                {{ "Academic Teacher" if role == "mentor" else "Gaming Coach" }}
+              </span>
+            {% endif %}
+          {% endfor %}
+          <span class="badge-verified">Verified Naga City Educator</span>
+        </div>
+
+        <h1>{{ tutor.display_name }}</h1>
+        <p>{{ role_label }}</p>
+
+        <div class="mentor-profile-rating">
+          <span class="mentor-stars">★★★★★</span>
+          <strong>5.0</strong>
+          <span>(Verified Educator)</span>
+        </div>
+      </div>
+
+      <!-- Pricing / Rates Box -->
+      <div class="mentor-profile-booking">
+        <span>Starting Rate</span>
+        <strong>
+          {% if is_mentor and tutor.teaching_rate is not none %}
+            ₱{{ "%.2f"|format(tutor.teaching_rate) }}<small>/hr</small>
+          {% elif is_coach and tutor.coaching_rate is not none %}
+            ₱{{ "%.2f"|format(tutor.coaching_rate) }}<small>/hr</small>
+          {% elif tutor.hourly_rate is not none %}
+            ₱{{ "%.2f"|format(tutor.hourly_rate) }}<small>/hr</small>
+          {% else %}
+            Contact<small> for rate</small>
+          {% endif %}
+        </strong>
+        <a href="{{ url_for('main.sessions') }}" class="cta-btn" style="text-decoration:none; text-align:center;">Book a Session</a>
+      </div>
+    </section>
+
+    <!-- Layout Details -->
+    <div class="mentor-profile-layout">
+      <div class="mentor-profile-main">
+        <!-- Bio Card -->
+        <div class="content-card mentor-profile-card">
+          <h2>About {{ tutor.display_name }}</h2>
+          <p>{{ tutor.bio or "Verified Learn2Play educator in Naga City offering 1-on-1 personalized lessons and coaching." }}</p>
+        </div>
+
+        <!-- Specialties / Subjects -->
+        <div class="content-card mentor-profile-card">
+          <h2>Subjects &amp; Specialties</h2>
+          <div class="mentor-specialties">
+            {% if tutor.topics and tutor.topics | length > 0 %}
+              {% for topic in tutor.topics %}
+                <span>{{ topic }}</span>
+              {% endfor %}
+            {% else %}
+              <p class="empty-hint">Available for general academic mentoring and gaming consultation.</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar Overview -->
+      <div class="mentor-profile-sidebar">
+        <div class="content-card mentor-profile-card">
+          <h2>Hourly Rates Breakdown</h2>
+          {% if is_mentor %}
+          <div class="mentor-detail-row">
+            <span>Academic Tutoring</span>
+            <strong>{{ "₱%.2f/hr"|format(tutor.teaching_rate) if tutor.teaching_rate is not none else "Rate not set" }}</strong>
+          </div>
+          {% endif %}
+
+          {% if is_coach %}
+          <div class="mentor-detail-row">
+            <span>Esports Coaching</span>
+            <strong>{{ "₱%.2f/hr"|format(tutor.coaching_rate) if tutor.coaching_rate is not none else "Rate not set" }}</strong>
+          </div>
+          {% endif %}
+
+          <div class="mentor-detail-row">
+            <span>Location Format</span>
+            <strong>Online &amp; Naga City</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+</body>
+</html>

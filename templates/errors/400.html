@@ -193,8 +193,7 @@
     <div class="error-icon" aria-hidden="true">!</div>
     <p class="error-code">ERROR 400</p>
     <h1>Bad request</h1>
-    <p class="message">{{ The request couldn’t be understood. Please check what you sent and try again. }}</p>
-
+    <p class="message">{{ message }}</p>
     <div class="actions">
       <a class="button" href="{{ url_for('main.home') }}">Go back</a>
       <a class="button secondary" href="{{ url_for('main.dashboard') }}">Go to dashboard</a>

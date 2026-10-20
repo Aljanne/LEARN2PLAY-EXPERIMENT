@@ -5,9 +5,8 @@ from sqlalchemy import text
 
 from config import Config
 from errors import register_error_handlers
-from extensions import db, login_manager, csrf
+from extensions import csrf, db, login_manager
 
-# Create Migrate instance
 migrate = Migrate()
 
 
@@ -24,7 +23,7 @@ def create_app():
     csrf.init_app(app)
 
     # Import models so SQLAlchemy knows about them
-    from models import User
+    from models import Appointment, Credential, RoleApplication, User
 
     # Tell Flask-Login how to find a user by ID
     @login_manager.user_loader
@@ -40,13 +39,53 @@ def create_app():
 
     register_error_handlers(app)
 
-    # Create database tables & auto-add topics column if missing
+    # Non-destructive schema migration
     with app.app_context():
+        # Creates appointments table and any missing tables safely
         db.create_all()
+
+        # Add topics_json column if missing
         try:
             db.session.execute(text("ALTER TABLE users ADD COLUMN topics_json TEXT DEFAULT '[]'"))
             db.session.commit()
         except Exception:
-            db.session.rollback()  # Column already exists, safe to ignore
+            db.session.rollback()
+
+        # Add legacy hourly_rate column if missing
+        try:
+            db.session.execute(text("ALTER TABLE users ADD COLUMN hourly_rate INTEGER DEFAULT 300"))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+        # Add separate teaching_rate column if missing
+        try:
+            db.session.execute(text("ALTER TABLE users ADD COLUMN teaching_rate NUMERIC(10, 2)"))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+        # Add separate coaching_rate column if missing
+        try:
+            db.session.execute(text("ALTER TABLE users ADD COLUMN coaching_rate NUMERIC(10, 2)"))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+        # Non-destructive backfill: initialize from existing hourly_rate for approved mentors and coaches
+        try:
+            db.session.execute(text("""
+                UPDATE users 
+                SET teaching_rate = hourly_rate 
+                WHERE teaching_rate IS NULL AND hourly_rate IS NOT NULL AND roles_json LIKE '%"mentor"%'
+            """))
+            db.session.execute(text("""
+                UPDATE users 
+                SET coaching_rate = hourly_rate 
+                WHERE coaching_rate IS NULL AND hourly_rate IS NOT NULL AND roles_json LIKE '%"coach"%'
+            """))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
 
     return app

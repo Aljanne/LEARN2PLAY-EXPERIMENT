@@ -5,9 +5,7 @@
 
    Part 1  User, roles and modes   (every page with the topbar)
    Part 2  Profile dropdown        (every page with the topbar)
-   Part 3  Tutor grid, filters, search (dashboard only)
-
-   Login / sign up now lives in auth.js, not here.
+   Part 3  Tutor grid, filters, search (database-driven)
    ============================================================ */
 
 /* ---------- storage helpers (localStorage can throw, e.g. private mode) ---------- */
@@ -20,7 +18,7 @@ const store = {
 const KEYS = { user: "l2_user", mode: "l2_activeMode" };
 
 function esc(value) {
-  return String(value)
+  return String(value || "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -32,8 +30,6 @@ function esc(value) {
 /* ============================================================
    PART 1 — user, roles and modes
    ============================================================ */
-
-/* One mode per role. Add a role later by adding one entry here. */
 const MODES = {
   student: { label: "Learning" },
   mentor:  { label: "Mentoring" },
@@ -41,21 +37,13 @@ const MODES = {
 };
 
 function getUser() {
-  // TODO(backend): replace with  const user = await (await fetch("/api/me")).json();
-  // The server must also check roles on every request. This script only changes what is displayed.
   let user = null;
   try { user = JSON.parse(store.get(KEYS.user)); } catch (e) { /* ignore bad data */ }
 
   if (!user) {
-    user = { name: "Juan Dela Cruz", email: "juan@example.com", roles: ["student", "coach"] };
+    user = { name: "User", email: "", roles: ["student"] };
   }
 
-  // DEV ONLY: test role combinations with dashboard.html?roles=student,mentor
-  // Remove this once the backend exists.
-  const override = new URLSearchParams(location.search).get("roles");
-  if (override) user.roles = override.split(",");
-
-  // Keep only known roles; everyone is at least a student so the page is never empty.
   user.roles = (user.roles || []).filter((r) => MODES[r]);
   if (user.roles.length === 0) user.roles = ["student"];
 
@@ -63,24 +51,21 @@ function getUser() {
 }
 
 const user = getUser();
-const availableModes = user.roles;                       // modes map 1:1 to roles
+const availableModes = user.roles;
 
 function pickInitialMode() {
   const saved = store.get(KEYS.mode);
-  // A saved mode is only valid if the user still has that role.
   return availableModes.includes(saved) ? saved : availableModes[0];
 }
 
 let activeMode = pickInitialMode();
 
 function applyMode() {
-  // Show only elements whose data-show-for list includes the active mode.
   document.querySelectorAll("[data-show-for]").forEach((el) => {
     const modes = el.dataset.showFor.split(/\s+/);
     el.classList.toggle("hidden", !modes.includes(activeMode));
   });
 
-  // Switcher: only visible with 2+ roles, only buttons for roles the user has.
   const switcher = document.getElementById("modeSwitch");
   if (switcher) {
     switcher.classList.toggle("hidden", availableModes.length < 2);
@@ -110,15 +95,12 @@ if (modeSwitch) {
   });
 }
 
-// The "Get Started" card is for signed-out visitors, and this page assumes a signed-in user.
 const signupCta = document.querySelector(".side-cta");
 if (signupCta) signupCta.classList.add("hidden");
 
 applyMode();
 
-// Let page-specific scripts (sessions, settings, ...) read the same state.
 window.L2 = { user, getMode: () => activeMode, setMode };
-
 
 
 /* ============================================================
@@ -155,16 +137,14 @@ window.L2 = { user, getMode: () => activeMode, setMode };
     });
 
     document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape" &&
-            !dropdown.classList.contains("hidden")) {
+        if (event.key === "Escape" && !dropdown.classList.contains("hidden")) {
             closeMenu(true);
         }
     });
 
     function displayUser(account) {
         const name = account.name || "User";
-        const roles = (account.roles || [])
-            .filter(role => Object.hasOwn(MODES, role));
+        const roles = (account.roles || []).filter(role => Object.hasOwn(MODES, role));
 
         const initials = name
             .trim()
@@ -173,9 +153,12 @@ window.L2 = { user, getMode: () => activeMode, setMode };
             .map(part => part[0])
             .join("")
             .slice(0, 2)
-            .toUpperCase();
+            .toUpperCase() || "U";
 
-        avatar.textContent = initials || "U";
+        // Don't overwrite if avatar contains an <img>
+        if (!avatar.querySelector("img")) {
+            avatar.textContent = initials.slice(0, 1);
+        }
 
         const nameEl = document.getElementById("menuName");
         const emailEl = document.getElementById("menuEmail");
@@ -186,12 +169,11 @@ window.L2 = { user, getMode: () => activeMode, setMode };
 
         if (rolesEl) {
             rolesEl.replaceChildren();
-
+            const labels = { student: "Student", mentor: "Teacher", coach: "Gaming Coach" };
             roles.forEach(role => {
                 const pill = document.createElement("span");
-                pill.className =
-                    "pill " + (role === "coach" ? "g" : "a");
-                pill.textContent = role;
+                pill.className = "pill " + (role === "coach" ? "g" : "a");
+                pill.textContent = labels[role] || role;
                 rolesEl.appendChild(pill);
             });
         }
@@ -212,35 +194,17 @@ window.L2 = { user, getMode: () => activeMode, setMode };
             }
 
             const data = await response.json();
-
-            if (!response.ok || !data.ok || !data.user) {
-                throw new Error(data.message || "Could not load your account.");
-            }
+            if (!response.ok || !data.ok || !data.user) return;
 
             const account = data.user;
-
-            // Update the existing shared user object.
             user.name = account.name || "User";
             user.email = account.email || "";
-            user.roles.splice(
-                0,
-                user.roles.length,
-                ...(account.roles || []).filter(
-                    role => Object.hasOwn(MODES, role)
-                )
-            );
+            user.roles.splice(0, user.roles.length, ...(account.roles || []).filter(role => Object.hasOwn(MODES, role)));
 
-            if (user.roles.length === 0) {
-                user.roles.push("student");
-            }
+            if (user.roles.length === 0) user.roles.push("student");
 
-            // Keep localStorage updated for other frontend code.
             store.set(KEYS.user, JSON.stringify(user));
-
-            // Keep the selected mode valid for this account.
-            if (!user.roles.includes(activeMode)) {
-                activeMode = user.roles[0];
-            }
+            if (!user.roles.includes(activeMode)) activeMode = user.roles[0];
 
             store.set(KEYS.mode, activeMode);
             applyMode();
@@ -251,99 +215,53 @@ window.L2 = { user, getMode: () => activeMode, setMode };
         }
     }
 
-    // Show cached details first, then replace them with server data.
     displayUser(user);
     loadLoggedInUser();
 
-    // Log out through Flask instead of just clearing localStorage.
+    // Log out through Flask
     const logout = document.getElementById("logoutBtn");
-
     if (logout) {
         logout.addEventListener("click", async (event) => {
             event.preventDefault();
-
             try {
-                const tokenResponse = await fetch("/api/csrf-token", {
-                    credentials: "same-origin"
-                });
+                const tokenResponse = await fetch("/api/csrf-token", { credentials: "same-origin" });
                 const tokenData = await tokenResponse.json();
 
-                if (!tokenResponse.ok || !tokenData.csrf_token) {
-                    throw new Error("Could not prepare logout.");
-                }
-
-                const response = await fetch("/api/auth/logout", {
+                await fetch("/api/auth/logout", {
                     method: "POST",
                     credentials: "same-origin",
                     headers: {
                         Accept: "application/json",
-                        "X-CSRFToken": tokenData.csrf_token
+                        "X-CSRFToken": tokenData.csrf_token || ""
                     }
                 });
-
-                if (!response.ok) {
-                    throw new Error("Logout failed.");
-                }
 
                 store.remove(KEYS.user);
                 store.remove(KEYS.mode);
                 window.location.href = "/auth";
-
             } catch (error) {
-                console.error("Logout error:", error);
-                alert("Could not log out. Please try again.");
+                window.location.href = "/auth";
             }
         });
     }
 })();
 
 
-
 /* ============================================================
-   PART 3 — tutor grid, filters, search (dashboard only)
-   Cards render from the TUTORS array below. When the backend is
-   ready, replace it with fetch("/api/tutors") and keep render().
+   PART 3 — database-driven tutor grid, filters & search
    ============================================================ */
 (function () {
   const grid = document.getElementById("tutorGrid");
-  if (!grid) return; // not on the dashboard page
+  const emptyState = document.getElementById("emptyState");
+  const emptyMsg = document.getElementById("emptyStateMsg");
+  const searchInput = document.getElementById("searchInput");
 
-  /* ---------- data (swap for API later) ---------- */
-  const TUTORS = [
-    {
-      slug: "sophia-reyes", name: "Sophia Reyes", subject: "Mathematics & Calculus",
-      rating: 4.9, reviews: 143, price: 550, category: "academic", variant: 0,
-      desc: "PhD candidate at MIT specializing in applied mathematics. I help students master calculus, linear algebra and exam strategy."
-    },
-    {
-      slug: "marcus-chen", name: "Marcus Chen", subject: "Valorant & FPS Strategy",
-      rating: 4.8, reviews: 211, price: 650, category: "gaming", variant: 1,
-      desc: "Former pro Valorant player (Radiant rank). I coach players from Silver to Immortal on positioning, aim and team play."
-    },
-    {
-      slug: "amara-osei", name: "Amara Osei", subject: "Chemistry & Biology",
-      rating: 4.7, reviews: 98, price: 450, category: "academic", variant: 2,
-      desc: "Pre-med student & STEM tutor with a passion for making science accessible. Specializing in organic chemistry and cell biology."
-    },
-    {
-      slug: "kai-nakamura", name: "Kai Nakamura", subject: "League of Legends",
-      rating: 4.9, reviews: 175, price: 750, category: "gaming", variant: 3,
-      desc: "Grandmaster LoL player with 6 years of competitive play. I help mid to high-elo players climb with VOD reviews and macro coaching."
-    },
-    {
-      slug: "elena-vasquez", name: "Elena Vasquez", subject: "English & Essay Writing",
-      rating: 4.6, reviews: 67, price: 400, category: "academic", variant: 4,
-      desc: "English Literature MA graduate with 4 years of tutoring experience. I specialize in college essay writing and critical reading."
-    },
-    {
-      slug: "darius-bell", name: "Darius Bell", subject: "Apex Legends & Battle Royale",
-      rating: 4.7, reviews: 132, price: 600, category: "gaming", variant: 5,
-      desc: "Masters-rank Apex Legends player with 5000+ hours. I coach on movement, rotations, loot routes and endgame decisions."
-    }
-  ];
+  if (!grid) return; // not on dashboard
+
+  let TUTORS = []; // loaded from /api/tutors
 
   const AVATAR_GRADS = [
-    ["#f472b6", "#a855f7"], ["#60a5fa", "#34d399"], ["#fbbf24", "#f472b6"],
+    ["#7c6cf5", "#f472b6"], ["#60a5fa", "#34d399"], ["#fbbf24", "#f472b6"],
     ["#22d3ee", "#6366f1"], ["#a78bfa", "#f472b6"], ["#34d399", "#60a5fa"]
   ];
   const NEON_SETS = [
@@ -356,7 +274,6 @@ window.L2 = { user, getMode: () => activeMode, setMode };
     [["thesis → intro", 36, 56], ["para. 2: evidence", 226, 44], ["draft no. 3", 52, 116], ["conclusion", 244, 114]]
   ];
 
-  /* ---------- decorative card artwork (offline SVG) ---------- */
   function academicSVG(variant) {
     const formulas = FORMULA_SETS[variant % FORMULA_SETS.length];
     const texts = formulas
@@ -398,20 +315,10 @@ window.L2 = { user, getMode: () => activeMode, setMode };
     );
   }
 
-  const editBtn = document.getElementById("editProfileBtn");
-
-if(editBtn){
-    editBtn.addEventListener("click", () => {
-        alert("Edit Profile feature coming soon.");
-    });
-}
-
-  /* ---------- card template ---------- */
   function initialsOf(name) {
-    return name.split(/\s+/).filter(Boolean).map((w) => w.charAt(0)).join("").slice(0, 2).toUpperCase();
+    return (name || "").split(/\s+/).filter(Boolean).map((w) => w.charAt(0)).join("").slice(0, 2).toUpperCase() || "U";
   }
 
-  // Five stars; stars above the rating are dimmed so 4.6 doesn't look like a 5.
   function starsSVG(rating) {
     const path = '<path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/>';
     let out = "";
@@ -422,99 +329,162 @@ if(editBtn){
     return out;
   }
 
+  // ---------- Dynamic Sidebar Schedule Renderer ----------
+function updateSidebarSchedule(upcomingSession, previousSession) {
+    const emptyBox = document.getElementById("sideScheduleEmpty");
+    const upcomingContainer = document.getElementById("sideUpcomingContainer");
+    const previousContainer = document.getElementById("sidePreviousContainer");
+
+    const hasUpcoming = Boolean(upcomingSession);
+    const hasPrevious = Boolean(previousSession);
+
+    // If no sessions, display empty state
+    if (!hasUpcoming && !hasPrevious) {
+        if (emptyBox) emptyBox.classList.remove("hidden");
+        if (upcomingContainer) upcomingContainer.classList.add("hidden");
+        if (previousContainer) previousContainer.classList.add("hidden");
+        return;
+    }
+
+    if (emptyBox) emptyBox.classList.add("hidden");
+
+    // Only render Upcoming if one actually exists
+    if (upcomingContainer) {
+        if (hasUpcoming) {
+            upcomingContainer.classList.remove("hidden");
+            upcomingContainer.innerHTML = `
+                <div class="side-schedule-card">
+                    <div class="side-sched-header">
+                        <span class="sched-pill upcoming">NEXT UP</span>
+                        <small class="sched-time-badge">${esc(upcomingSession.date_label)}</small>
+                    </div>
+                    <strong class="side-sched-title">${esc(upcomingSession.learner_name)}</strong>
+                    <p class="side-sched-sub">${esc(upcomingSession.subject)}</p>
+                    <div class="side-sched-meta">
+                        <span>⏰ ${esc(upcomingSession.time)}</span>
+                        <span>💰 ₱${esc(upcomingSession.price)}</span>
+                    </div>
+                    <a href="/sessions" class="side-sched-btn">View Session &rarr;</a>
+                </div>
+            `;
+        } else {
+            upcomingContainer.classList.add("hidden");
+        }
+    }
+
+    // Only render Previous if one actually exists
+    if (previousContainer) {
+        if (hasPrevious) {
+            previousContainer.classList.remove("hidden");
+            previousContainer.innerHTML = `
+                <div class="side-schedule-card">
+                    <div class="side-sched-header">
+                        <span class="sched-pill completed">PREVIOUS</span>
+                        <small class="sched-time-badge">${esc(previousSession.date_label)}</small>
+                    </div>
+                    <strong class="side-sched-title">${esc(previousSession.learner_name)}</strong>
+                    <p class="side-sched-sub">${esc(previousSession.subject)}</p>
+                    <div class="side-sched-meta">
+                        <span>✅ Completed Session</span>
+                        <span>💰 +₱${esc(previousSession.earnings)} earned</span>
+                    </div>
+                </div>
+            `;
+        } else {
+            previousContainer.classList.add("hidden");
+        }
+    }
+}
+
+// Initial state: No active sessions
+updateSidebarSchedule(null, null);
+
   function cardHTML(t, i) {
     const grad = AVATAR_GRADS[i % AVATAR_GRADS.length];
     const isAcademic = t.category === "academic";
-    const media = isAcademic ? academicSVG(t.variant) : gamingSVG(t.variant);
+    const media = isAcademic ? academicSVG(i) : gamingSVG(i);
     const badge = isAcademic
       ? '<span class="badge academic">Academic</span>'
       : '<span class="badge gaming">Gaming</span>';
-    const rating = Number(t.rating);
+    const rating = Number(t.rating || 5.0);
+    const price = t.price || 300;
 
-    // Text fields go through esc() because they will come from the database later.
+    const topicsText = (t.topics && t.topics.length) ? t.topics.join(" • ") : (isAcademic ? "Academic Tutoring" : "Gaming Coaching");
+    const searchTokens = (t.name + " " + topicsText + " " + (t.bio || "")).toLowerCase();
+
+    const avatarMarkup = t.profile_picture 
+      ? '<img src="' + esc(t.profile_picture) + '" alt="' + esc(t.name) + '" class="avatar-img">'
+      : esc(initialsOf(t.name));
+
     return (
-      '<article class="tutor-card" data-slug="' + esc(t.slug) + '" data-search="' + esc((t.name + " " + t.subject + " " + t.desc).toLowerCase()) + '" tabindex="0" role="link" aria-label="View profile for ' + esc(t.name) + '">' +
+      '<article class="tutor-card" data-search="' + esc(searchTokens) + '" tabindex="0" role="link" aria-label="View profile for ' + esc(t.name) + '">' +
         '<div class="card-media">' + media + badge +
-          '<div class="card-avatar" style="background:linear-gradient(135deg,' + grad[0] + "," + grad[1] + ')">' +
-            esc(initialsOf(t.name)) +
+          '<div class="card-avatar" style="background:linear-gradient(135deg,' + grad[0] + "," + grad[1] + '); overflow: hidden;">' +
+            avatarMarkup +
           "</div>" +
         "</div>" +
         '<div class="card-body">' +
           '<div class="card-name">' + esc(t.name) + "</div>" +
-          '<div class="card-subject">' + esc(t.subject) + "</div>" +
+          '<div class="card-subject">' + esc(topicsText) + "</div>" +
           '<div class="card-stars"><span class="stars">' + starsSVG(rating) +
             '</span><span class="rating">' + rating.toFixed(1) + "</span>" +
-            '<span class="reviews">(' + esc(t.reviews) + " reviews)</span></div>" +
-          '<p class="card-desc">' + esc(t.desc) + "</p>" +
+            '<span class="reviews">(' + esc(t.reviews || 0) + " reviews)</span></div>" +
+          '<p class="card-desc">' + esc(t.bio) + "</p>" +
           '<div class="card-footer">' +
-            '<span class="price-lg">₱' + esc(t.price) + "/hr</span>" +
-            '<button class="view-btn" type="button" data-slug="' + esc(t.slug) + '" data-tutor="' + esc(t.name) + '">View Profile &rarr;</button>' +
+            '<span class="price-lg">₱' + esc(price) + "/hr</span>" +
+            '<a href="/tutors/' + esc(t.id) + '" class="view-btn">View Profile &rarr;</a>' +
           "</div>" +
         "</div>" +
       "</article>"
     );
   }
 
-  /* ---------- filtering state ---------- */
   const state = { category: "all", query: "" };
-  const emptyState  = document.getElementById("emptyState");
-  const searchInput = document.getElementById("searchInput");
-
-  function applySearchFilter() {
-    const q = state.query.toLowerCase();
-    const cards = grid.querySelectorAll(".tutor-card");
-    let visibleCount = 0;
-
-    cards.forEach((card) => {
-      const matches = !q || card.dataset.search.includes(q);
-      card.hidden = false;
-      card.setAttribute("aria-hidden", String(!matches));
-
-      if (matches) {
-        card.classList.remove("search-result-hidden");
-        visibleCount += 1;
-        return;
-      }
-
-      card.classList.add("search-result-hidden");
-      window.setTimeout(() => {
-        if (card.classList.contains("search-result-hidden")) card.hidden = true;
-      }, 180);
-    });
-
-    if (emptyState) {
-      const hasResults = visibleCount > 0;
-      emptyState.classList.toggle("hidden", hasResults);
-      if (!hasResults) {
-        emptyState.classList.remove("search-empty-enter");
-        requestAnimationFrame(() => emptyState.classList.add("search-empty-enter"));
-      }
-    }
-  }
 
   function render() {
     const list = TUTORS.filter((t) => {
-      if (state.category !== "all" && t.category !== state.category) return false;
-      return true;
+      if (state.category !== "all" && t.category !== state.category && t.category !== "both") return false;
+      
+      const q = state.query.toLowerCase();
+      if (!q) return true;
+
+      const topicsStr = (t.topics || []).join(" ").toLowerCase();
+      return t.name.toLowerCase().includes(q) || (t.bio || "").toLowerCase().includes(q) || topicsStr.includes(q);
     });
-    grid.innerHTML = list.map(cardHTML).join("");
-    grid.querySelectorAll(".tutor-card").forEach((card, index) => {
+
+    if (list.length === 0) {
+      grid.innerHTML = "";
+      if (emptyState) {
+        emptyState.classList.remove("hidden");
+        if (emptyMsg) {
+          emptyMsg.textContent = TUTORS.length === 0
+            ? "No registered tutors or coaches yet. Once verified educators register in Naga City, they will appear here!"
+            : "No tutors match your search — try a different subject or keyword.";
+        }
+      }
+      return;
+    }
+
+    if (emptyState) emptyState.classList.add("hidden");
+
+    grid.innerHTML = list.map((t, i) => cardHTML(t, i)).join("");
+        grid.querySelectorAll(".tutor-card").forEach((card, index) => {
       card.style.setProperty("--result-delay", `${Math.min(index, 5) * 70}ms`);
       card.classList.add("search-result-enter");
+
+      // Clicking anywhere on the card navigates to that tutor's profile
+      card.addEventListener("click", (e) => {
+        if (e.target.closest("a")) return;
+        const link = card.querySelector(".view-btn");
+        if (link && link.href) window.location.href = link.href;
+      });
     });
-    applySearchFilter();
   }
 
   function setCategory(cat) {
     state.category = cat;
     document.querySelectorAll(".side-item[data-cat]").forEach((b) => {
       b.classList.toggle("active", b.dataset.cat === cat);
-      if (b.dataset.cat === cat) {
-        b.classList.remove("filter-press");
-        void b.offsetWidth;
-        b.classList.add("filter-press");
-        window.setTimeout(() => b.classList.remove("filter-press"), 300);
-      }
     });
 
     grid.classList.remove("category-switching");
@@ -523,42 +493,37 @@ if(editBtn){
     render();
   }
 
-  /* sidebar: category buttons */
+  // Sidebar category filter clicks
   document.querySelectorAll(".side-item[data-cat]").forEach((btn) => {
     btn.addEventListener("click", () => setCategory(btn.dataset.cat));
   });
 
-  /* navbar links double as quick filters */
-  document.querySelectorAll(".tb-nav a[data-nav]").forEach((a) => {
-    a.addEventListener("click", (e) => {
-      e.preventDefault();
-      setCategory(a.dataset.nav);
-    });
-  });
-
-  /* live search */
+  // Live search from the main page search bar
   if (searchInput) {
     searchInput.addEventListener("input", () => {
       state.query = searchInput.value.trim();
-      applySearchFilter();
+      render();
     });
   }
 
-  /* Open the dedicated mentor profile page from the whole card or button. */
-  grid.addEventListener("click", (e) => {
-    const card = e.target.closest(".tutor-card");
-    if (card) {
-      window.location.href = "/mentors/" + encodeURIComponent(card.dataset.slug);
-    }
-  });
+  // Fetch from the real backend API
+  async function loadTutorsFromBackend() {
+    try {
+      const res = await fetch("/api/tutors", {
+        credentials: "same-origin",
+        headers: { Accept: "application/json" }
+      });
+      if (!res.ok) throw new Error("Could not load educators.");
 
-  grid.addEventListener("keydown", (e) => {
-    const card = e.target.closest(".tutor-card");
-    if (card && (e.key === "Enter" || e.key === " ")) {
-      e.preventDefault();
-      window.location.href = "/mentors/" + encodeURIComponent(card.dataset.slug);
+      const data = await res.json();
+      TUTORS = data.tutors || [];
+      render();
+    } catch (e) {
+      console.warn("Could not fetch tutors:", e.message);
+      TUTORS = [];
+      render();
     }
-  });
+  }
 
-  render();
+  loadTutorsFromBackend();
 })();

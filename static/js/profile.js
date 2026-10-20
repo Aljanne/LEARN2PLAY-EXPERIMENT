@@ -2,7 +2,6 @@
 
 let cachedUser = null;
 let cropperInstance = null;
-let croppedImageBlob = null;
 
 // ---------- 1. Unified User Data Loader ----------
 async function loadUserData() {
@@ -21,6 +20,9 @@ async function loadUserData() {
     const statMentors = document.getElementById("statMentors");
     const statHours = document.getElementById("statHours");
     const statRating = document.getElementById("statRating");
+
+    const teachingRateEl = document.getElementById("profileTeachingRate");
+    const coachingRateEl = document.getElementById("profileCoachingRate");
 
     try {
         const response = await fetch("/api/me", {
@@ -53,13 +55,29 @@ async function loadUserData() {
             .toUpperCase() || "U";
 
         // Text updates
-        if (nameEl) nameEl.innerHTML = `${name} <span class="badge-verified">Verified User</span>`;
+        if (nameEl) nameEl.innerHTML = `${escapeHtml(name)} <span class="badge-verified">Verified User</span>`;
         if (emailEl) emailEl.textContent = user.email || "";
         if (bioEl) {
             bioEl.textContent = user.bio || "No introduction added yet. Click 'Edit Profile' to introduce yourself!";
         }
         if (menuName) menuName.textContent = name;
         if (menuEmail) menuEmail.textContent = user.email || "";
+
+        // Rates display update
+        if (teachingRateEl) {
+            if (user.teaching_rate !== null && user.teaching_rate !== undefined) {
+                teachingRateEl.textContent = `₱${Number(user.teaching_rate).toFixed(2)} / hr`;
+            } else {
+                teachingRateEl.innerHTML = `<em style="color: var(--txt3); font-weight: normal;">Not set</em>`;
+            }
+        }
+        if (coachingRateEl) {
+            if (user.coaching_rate !== null && user.coaching_rate !== undefined) {
+                coachingRateEl.textContent = `₱${Number(user.coaching_rate).toFixed(2)} / hr`;
+            } else {
+                coachingRateEl.innerHTML = `<em style="color: var(--txt3); font-weight: normal;">Not set</em>`;
+            }
+        }
 
         // Avatars
         renderAvatar(heroAvatarEl, user.profile_picture, initials);
@@ -89,7 +107,7 @@ async function loadUserData() {
             } else {
                 const empty = document.createElement("p");
                 empty.className = "empty-hint";
-                empty.textContent = "No topics or games added yet. Click 'Edit Profile' to add the subjects and games you study or play!";
+                empty.textContent = "No topics or games added yet. Click 'Edit Profile' to add them!";
                 topicsListEl.appendChild(empty);
             }
         }
@@ -116,10 +134,12 @@ async function loadUserData() {
             });
         }
 
-        // Pre-fill form
+        // Pre-fill edit form inputs
         const nameInput = document.getElementById("editName");
         const bioInput = document.getElementById("editBio");
         const topicsInput = document.getElementById("editTopics");
+        const teachingRateInput = document.getElementById("editTeachingRate");
+        const coachingRateInput = document.getElementById("editCoachingRate");
 
         if (nameInput) nameInput.value = user.name || "";
         if (bioInput) {
@@ -127,10 +147,22 @@ async function loadUserData() {
             updateBioCount();
         }
         if (topicsInput) topicsInput.value = (user.topics || []).join(", ");
+        if (teachingRateInput) {
+            teachingRateInput.value = (user.teaching_rate !== null && user.teaching_rate !== undefined) ? user.teaching_rate : "";
+        }
+        if (coachingRateInput) {
+            coachingRateInput.value = (user.coaching_rate !== null && user.coaching_rate !== undefined) ? user.coaching_rate : "";
+        }
 
     } catch (error) {
         console.error("Profile loading error:", error);
     }
+}
+
+function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
 }
 
 function renderAvatar(element, picture, initials) {
@@ -166,10 +198,8 @@ function updateBioCount() {
 
     if (!dropzone || !fileInput) return;
 
-    // Click dropzone to open file picker
     dropzone.addEventListener("click", () => fileInput.click());
 
-    // Drag-and-drop highlight handlers
     ["dragenter", "dragover"].forEach(event => {
         dropzone.addEventListener(event, (e) => {
             e.preventDefault();
@@ -195,7 +225,6 @@ function updateBioCount() {
         }
     });
 
-    // Handle Image Selection and Open Crop Window
     function handleSelectedImage(file) {
         if (!file.type.startsWith("image/")) {
             alert("Please select an image file (PNG, JPG, or WEBP).");
@@ -207,10 +236,8 @@ function updateBioCount() {
             cropperImageSrc.src = e.target.result;
             cropModal.classList.remove("hidden");
 
-            // Destroy previous cropper instance if exists
             if (cropperInstance) cropperInstance.destroy();
 
-            // Initialize Cropper.js with 1:1 circle/square aspect ratio
             cropperInstance = new Cropper(cropperImageSrc, {
                 aspectRatio: 1,
                 viewMode: 1,
@@ -223,12 +250,10 @@ function updateBioCount() {
         reader.readAsDataURL(file);
     }
 
-    // Cropper Toolbar Controls
     document.getElementById("zoomInBtn")?.addEventListener("click", () => cropperInstance?.zoom(0.1));
     document.getElementById("zoomOutBtn")?.addEventListener("click", () => cropperInstance?.zoom(-0.1));
     document.getElementById("rotateLeftBtn")?.addEventListener("click", () => cropperInstance?.rotate(-90));
 
-    // Close Crop Modal
     function closeCropper() {
         cropModal.classList.add("hidden");
         if (cropperInstance) {
@@ -241,14 +266,12 @@ function updateBioCount() {
     cancelCropBtn?.addEventListener("click", closeCropper);
     closeCropBtn?.addEventListener("click", closeCropper);
 
-    // Apply & Upload Cropped Image
     saveCropBtn?.addEventListener("click", async () => {
         if (!cropperInstance) return;
 
         saveCropBtn.disabled = true;
         saveCropBtn.textContent = "Uploading…";
 
-        // Get 320x320 optimized canvas
         const canvas = cropperInstance.getCroppedCanvas({
             width: 320,
             height: 320,
@@ -275,7 +298,6 @@ function updateBioCount() {
                 const data = await response.json();
                 if (!response.ok || !data.ok) throw new Error(data.message || "Failed to upload avatar.");
 
-                // Immediately update avatars on page
                 const heroAvatar = document.getElementById("profileAvatar");
                 const navAvatar = document.getElementById("userAvatar");
                 if (heroAvatar) heroAvatar.innerHTML = `<img src="${data.profile_picture}" alt="Avatar">`;
@@ -292,7 +314,7 @@ function updateBioCount() {
     });
 })();
 
-// ---------- 3. Edit Profile Form ----------
+// ---------- 3. Edit Profile Form (Functional for Teachers & Coaches) ----------
 (function setupProfileEditor() {
     const form = document.getElementById("profileEditForm");
     const editBtn = document.getElementById("editProfileBtn");
@@ -301,6 +323,8 @@ function updateBioCount() {
     const message = document.getElementById("profileFormMessage");
     const bioInput = document.getElementById("editBio");
     const topicsInput = document.getElementById("editTopics");
+    const teachingRateInput = document.getElementById("editTeachingRate");
+    const coachingRateInput = document.getElementById("editCoachingRate");
 
     if (!form || !editBtn) return;
 
@@ -308,15 +332,26 @@ function updateBioCount() {
         form.classList.remove("hidden");
         form.scrollIntoView({ behavior: "smooth", block: "center" });
         document.getElementById("editName")?.focus();
-        if (message) message.textContent = "";
+        if (message) {
+            message.textContent = "";
+            message.style.color = "var(--lavender)";
+        }
     });
 
     const closeForm = () => {
         form.classList.add("hidden");
+        if (message) message.textContent = "";
+        // Revert form fields to cached user data (Cancel behavior)
         if (cachedUser) {
             document.getElementById("editName").value = cachedUser.name || "";
             if (bioInput) bioInput.value = cachedUser.bio || "";
             if (topicsInput) topicsInput.value = (cachedUser.topics || []).join(", ");
+            if (teachingRateInput) {
+                teachingRateInput.value = (cachedUser.teaching_rate !== null && cachedUser.teaching_rate !== undefined) ? cachedUser.teaching_rate : "";
+            }
+            if (coachingRateInput) {
+                coachingRateInput.value = (cachedUser.coaching_rate !== null && cachedUser.coaching_rate !== undefined) ? cachedUser.coaching_rate : "";
+            }
             updateBioCount();
         }
     };
@@ -329,17 +364,40 @@ function updateBioCount() {
         event.preventDefault();
         const saveBtn = document.getElementById("saveProfileBtn");
         const newName = document.getElementById("editName").value.trim();
-        const newBio = bioInput.value.trim();
-        const newTopics = topicsInput.value.trim();
+        const newBio = bioInput ? bioInput.value.trim() : "";
+        const newTopics = topicsInput ? topicsInput.value.trim() : "";
 
         if (!newName || newName.length < 2) {
-            if (message) message.textContent = "Display name must be at least 2 characters.";
+            if (message) {
+                message.style.color = "var(--danger)";
+                message.textContent = "Display name must be at least 2 characters.";
+            }
             return;
+        }
+
+        // Construct clean payload
+        const payload = {
+            name: newName,
+            bio: newBio,
+            topics: newTopics
+        };
+
+        // Attach rate values only when corresponding inputs are present
+        if (teachingRateInput) {
+            const raw = teachingRateInput.value.trim();
+            payload.teaching_rate = raw === "" ? null : raw;
+        }
+        if (coachingRateInput) {
+            const raw = coachingRateInput.value.trim();
+            payload.coaching_rate = raw === "" ? null : raw;
         }
 
         saveBtn.disabled = true;
         saveBtn.textContent = "Saving…";
-        if (message) message.textContent = "";
+        if (message) {
+            message.style.color = "var(--lavender)";
+            message.textContent = "Saving your changes…";
+        }
 
         try {
             const tokenResp = await fetch("/api/csrf-token", { credentials: "same-origin" });
@@ -353,20 +411,32 @@ function updateBioCount() {
                     Accept: "application/json",
                     "X-CSRFToken": tokenData.csrf_token
                 },
-                body: JSON.stringify({
-                    name: newName,
-                    bio: newBio,
-                    topics: newTopics
-                })
+                body: JSON.stringify(payload)
             });
 
             const data = await response.json();
-            if (!response.ok || !data.ok) throw new Error(data.message || "Could not save profile.");
+            if (!response.ok || !data.ok) {
+                throw new Error(data.message || "Could not save profile.");
+            }
 
+            if (message) {
+                message.style.color = "var(--green)";
+                message.textContent = "Profile updated successfully!";
+            }
+
+            // Immediately update on-page data without page reload
             await loadUserData();
-            form.classList.add("hidden");
+
+            setTimeout(() => {
+                form.classList.add("hidden");
+                if (message) message.textContent = "";
+            }, 600);
+
         } catch (error) {
-            if (message) message.textContent = error.message || "Failed to save profile.";
+            if (message) {
+                message.style.color = "var(--danger)";
+                message.textContent = error.message || "Failed to save profile.";
+            }
         } finally {
             saveBtn.disabled = false;
             saveBtn.textContent = "Save Changes";

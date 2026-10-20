@@ -1,79 +1,35 @@
 "use strict";
 
-(function setupSessionFilters() {
+(function setupSessionManager() {
     const studentView = document.getElementById("studentSessionsView");
     const mentorView = document.getElementById("mentorSessionsView");
+    const sessionList = document.getElementById("sessionList");
+    const emptyBox = document.getElementById("sessionsEmpty");
+    const tabs = document.querySelectorAll(".session-tab");
 
+    // 1. Role-based view switching (Student vs Mentor/Coach workspace)
     function setRoleView(mode) {
         const isMentor = mode === "mentor" || mode === "coach";
-        studentView?.classList.toggle("hidden", isMentor);
-        mentorView?.classList.toggle("hidden", !isMentor);
+        if (studentView) studentView.classList.toggle("hidden", isMentor);
+        if (mentorView) mentorView.classList.toggle("hidden", !isMentor);
     }
 
     const initialMode = window.L2?.getMode?.() || "student";
     setRoleView(initialMode);
+
     fetch("/api/me", { credentials: "same-origin", headers: { Accept: "application/json" } })
-        .then(response => response.ok ? response.json() : null)
+        .then(res => res.ok ? res.json() : null)
         .then(data => {
             if (!data?.user) return;
             const roles = data.user.roles || [];
             const mode = roles.includes(initialMode)
                 ? initialMode
-                : (roles.includes("mentor") ? "mentor" : roles.includes("coach") ? "coach" : "student");
+                : (roles.includes("mentor") ? "mentor" : (roles.includes("coach") ? "coach" : "student"));
             setRoleView(mode);
         })
         .catch(() => setRoleView(initialMode));
 
-    document.querySelectorAll(".mentor-availability-btn").forEach(button => {
-        button.addEventListener("click", () => alert("Availability management will be available soon."));
-    });
-    document.querySelectorAll(".mentor-accept-btn, .mentor-decline-btn").forEach(button => {
-        button.addEventListener("click", () => {
-            const request = button.closest(".mentor-request-card");
-            const learner = request.querySelector("h3").textContent;
-            alert(`${button.textContent} request from ${learner}. This action will be connected to the booking API soon.`);
-        });
-    });
-
-    const tabs = document.querySelectorAll(".session-tab");
-    const sessions = document.querySelectorAll(".scheduled-session");
-    const empty = document.getElementById("sessionsEmpty");
-    const sessionList = document.getElementById("sessionList");
-    let switchTimer = null;
-
-    function showSessions(status, animate = true) {
-        const updateList = () => {
-            let visibleCount = 0;
-
-            sessions.forEach(session => {
-                const isVisible = session.dataset.status === status;
-                session.hidden = !isVisible;
-                session.setAttribute("aria-hidden", String(!isVisible));
-                session.classList.remove("session-switch-enter");
-                if (isVisible) visibleCount += 1;
-            });
-
-            if (empty) empty.classList.toggle("hidden", visibleCount > 0);
-
-            if (animate && sessionList) {
-                requestAnimationFrame(() => {
-                    sessionList.classList.remove("session-list-leaving");
-                    sessions.forEach(session => {
-                        if (!session.hidden) session.classList.add("session-switch-enter");
-                    });
-                });
-            }
-        };
-
-        clearTimeout(switchTimer);
-        if (animate && sessionList) {
-            sessionList.classList.add("session-list-leaving");
-            switchTimer = setTimeout(updateList, 160);
-        } else {
-            updateList();
-        }
-    }
-
+    // 2. Tab switching between Upcoming & Past sessions
     tabs.forEach(tab => {
         tab.addEventListener("click", () => {
             const status = tab.dataset.status;
@@ -84,37 +40,75 @@
                 item.setAttribute("aria-selected", String(isActive));
             });
 
-            showSessions(status);
+            filterSessions(status);
         });
     });
 
-    document.querySelectorAll(".session-action").forEach(button => {
-        button.addEventListener("click", () => {
-            const session = button.closest(".scheduled-session");
-            const title = session.querySelector("h3").textContent;
+    function filterSessions(status) {
+        const sessions = sessionList ? sessionList.querySelectorAll(".scheduled-session") : [];
+        let visibleCount = 0;
 
-            if (button.classList.contains("cancel-session-action")) {
-                const confirmed = confirm(`Cancel your session for ${title}?`);
-                if (!confirmed) return;
+        sessions.forEach(card => {
+            const match = card.dataset.status === status;
+            card.style.display = match ? "grid" : "none";
+            if (match) visibleCount++;
+        });
 
-                session.remove();
-                const upcomingCount = document.getElementById("upcomingCount");
-                const remaining = document.querySelectorAll('.scheduled-session[data-status="upcoming"]').length;
-                if (upcomingCount) upcomingCount.textContent = String(remaining);
+        // Show empty message if no sessions match
+        if (emptyBox) {
+            emptyBox.style.display = visibleCount === 0 ? "flex" : "none";
+        }
+    }
 
-                const activeTab = document.querySelector(".session-tab.active");
-                if (activeTab?.dataset.status === "upcoming") {
-                    empty.classList.toggle("hidden", remaining > 0);
-                }
-                return;
+    // Initial filter check
+    filterSessions("upcoming");
+
+    // 3. Dropdown Menu & Logout
+    const menu = document.getElementById("profileMenu");
+    const avatar = document.getElementById("userAvatar");
+    const dropdown = document.getElementById("profileDropdown");
+    const logoutBtn = document.getElementById("logoutBtn");
+
+    if (avatar && dropdown) {
+        avatar.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const isOpen = !dropdown.classList.contains("hidden");
+            dropdown.classList.toggle("hidden", isOpen);
+            avatar.setAttribute("aria-expanded", String(!isOpen));
+        });
+
+        document.addEventListener("click", (e) => {
+            if (menu && !menu.contains(e.target)) {
+                dropdown.classList.add("hidden");
+                avatar.setAttribute("aria-expanded", "false");
             }
-
-            alert(`Session details for ${title} will be available soon.`);
         });
-    });
+    }
 
-    // Apply the default Upcoming filter on first load so completed sessions
-    // remain visible only inside the Past sessions tab.
-    const initialTab = document.querySelector(".session-tab.active");
-    if (initialTab) showSessions(initialTab.dataset.status, false);
+    if (logoutBtn) {
+        logoutBtn.addEventListener("click", async (e) => {
+            e.preventDefault();
+            try {
+                const tokenResp = await fetch("/api/csrf-token", { credentials: "same-origin" });
+                const tokenData = await tokenResp.json();
+
+                await fetch("/api/auth/logout", {
+                    method: "POST",
+                    credentials: "same-origin",
+                    headers: {
+                        "X-CSRFToken": tokenData.csrf_token || "",
+                        Accept: "application/json"
+                    }
+                });
+                window.location.href = "/auth";
+            } catch (err) {
+                window.location.href = "/auth";
+            }
+        });
+    }
+
+    // Availability button
+    document.querySelectorAll(".mentor-availability-btn").forEach(btn => {
+        btn.addEventListener("click", () => alert("Availability calendar management will open here soon."));
+    });
 })();

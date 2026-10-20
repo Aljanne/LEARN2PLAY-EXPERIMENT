@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Provider Schedule | Learn2Play</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body class="dashboard schedule-body">
+
+  <!-- Top Navbar -->
+  <header class="topbar">
+    <a class="tb-brand" href="{{ url_for('main.dashboard') }}">
+      <div class="logo">L2</div>
+      <span class="brand-name">Learn2Play</span>
+    </a>
+
+    <!-- Unified Navigation -->
+    <nav class="tb-nav" aria-label="Main navigation">
+      <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
+      <a href="{{ url_for('main.schedule') }}" class="active">Schedule</a>
+      <a href="{{ url_for('main.sessions') }}">My Sessions</a>
+      <a href="{{ url_for('main.profile') }}">Profile</a>
+      <a href="{{ url_for('main.settings') }}">Settings</a>
+      <a href="{{ url_for('main.help') }}">Help</a>
+    </nav>
+
+    <!-- Profile Dropdown -->
+    <div class="tb-right">
+      <div class="tb-profile" id="profileMenu">
+        <button class="tb-avatar" id="userAvatar" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="profileDropdown">
+          {% if current_user.is_authenticated and current_user.profile_picture %}
+            <img src="{{ current_user.profile_picture }}" alt="Avatar" class="avatar-img">
+          {% else %}
+            {{ current_user.display_name[:1] | upper if current_user.is_authenticated and current_user.display_name else 'U' }}
+          {% endif %}
+        </button>
+
+        <div class="dropdown hidden" id="profileDropdown" role="menu">
+          <div class="dd-header">
+            <div class="dd-name" id="menuName">{{ current_user.display_name }}</div>
+            <div class="dd-email" id="menuEmail">{{ current_user.email }}</div>
+            <div class="dd-roles" id="menuRoles">
+              {% for role in current_user.roles %}
+                <span class="pill {{ 'g' if role == 'coach' else 'a' }}">
+                  {{ "Teacher" if role == "mentor" else (role | title) }}
+                </span>
+              {% endfor %}
+            </div>
+          </div>
+
+          <a class="dd-item" role="menuitem" href="{{ url_for('main.profile') }}">View profile</a>
+          <a class="dd-item" role="menuitem" href="{{ url_for('main.schedule') }}">Teaching Schedule</a>
+          <a class="dd-item" role="menuitem" href="{{ url_for('main.sessions') }}">My sessions</a>
+          <a class="dd-item" role="menuitem" href="{{ url_for('main.settings') }}">Settings</a>
+          <a class="dd-item" role="menuitem" href="{{ url_for('main.help') }}">Help &amp; support</a>
+          <div class="dd-sep"></div>
+          <button type="button" class="dd-item danger" id="logoutBtn" role="menuitem">Log out</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Schedule Page Content -->
+  <main class="schedule-page">
+    <div class="schedule-back-row">
+      <a href="{{ url_for('main.dashboard') }}" class="settings-back-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        Back to Dashboard
+      </a>
+    </div>
+
+    <!-- Header Banner -->
+    <section class="schedule-header">
+      <div class="schedule-header-text">
+        <span class="pill a">TEACHING &amp; COACHING SCHEDULE</span>
+        <h1>Provider Appointment Schedule</h1>
+        <p>Review your confirmed upcoming lessons, track previous sessions, and manage your booked mentorship schedule.</p>
+      </div>
+
+      <div class="schedule-tz-badge">
+        <span class="tz-dot"></span>
+        <span>All times shown in <strong>{{ timezone_label }}</strong></span>
+      </div>
+    </section>
+
+    <!-- Stat Summary Bar -->
+    <section class="schedule-stats-bar">
+      <div class="stat-summary-card">
+        <span class="stat-sum-label">Upcoming Sessions</span>
+        <strong class="stat-sum-val">{{ upcoming | length }}</strong>
+        <small>Next scheduled lessons</small>
+      </div>
+      <div class="stat-summary-card">
+        <span class="stat-sum-label">Completed Sessions</span>
+        <strong class="stat-sum-val" style="color: #7ceea4;">{{ past | length }}</strong>
+        <small>Finished lessons</small>
+      </div>
+      <div class="stat-summary-card">
+        <span class="stat-sum-label">Cancelled Sessions</span>
+        <strong class="stat-sum-val" style="color: var(--txt3);">{{ cancelled | length }}</strong>
+        <small>Discontinued</small>
+      </div>
+    </section>
+
+    <!-- Schedule Tab Panel -->
+    <section class="schedule-panel">
+      <div class="schedule-tab-nav">
+        <button class="sched-tab-btn active" data-tab="upcoming">Upcoming ({{ upcoming | length }})</button>
+        <button class="sched-tab-btn" data-tab="past">Past &amp; Completed ({{ past | length }})</button>
+        <button class="sched-tab-btn" data-tab="cancelled">Cancelled ({{ cancelled | length }})</button>
+      </div>
+
+      <!-- Tab 1: Upcoming Appointments -->
+      <div class="sched-tab-content active" id="tabUpcoming">
+        {% if upcoming and upcoming | length > 0 %}
+          <div class="schedule-card-list">
+            {% for appt in upcoming %}
+            <article class="schedule-card">
+              <div class="sched-card-date">
+                <span class="sc-day">{{ appt.start_time.strftime('%d') }}</span>
+                <span class="sc-month">{{ appt.start_time.strftime('%b') }}</span>
+              </div>
+
+              <div class="sched-card-main">
+                <div class="sched-card-top">
+                  <div class="sched-student-info">
+                    <div class="sched-student-avatar">
+                      {% if appt.student and appt.student.profile_picture %}
+                        <img src="{{ appt.student.profile_picture }}" alt="Avatar" class="avatar-img">
+                      {% else %}
+                        {{ appt.student.display_name[:1] | upper if appt.student else 'S' }}
+                      {% endif %}
+                    </div>
+                    <div>
+                      <strong class="sched-student-name">{{ appt.student.display_name if appt.student else 'Student Learner' }}</strong>
+                      <span class="sched-student-email">{{ appt.student.email if appt.student else '' }}</span>
+                    </div>
+                  </div>
+
+                  <span class="role-pill {{ 'gaming' if appt.role == 'coach' else 'academic' }}">
+                    {{ "Gaming Coach" if appt.role == "coach" else "Academic Teacher" }}
+                  </span>
+                </div>
+
+                <h3 class="sched-topic-title">{{ appt.topic }}</h3>
+
+                <div class="sched-meta-grid">
+                  <div class="sched-meta-item">
+                    <span>⏰ Time &amp; Duration:</span>
+                    <strong>{{ format_time_range_pht(appt.start_time, appt.duration_minutes) }} ({{ appt.duration_minutes }} min)</strong>
+                  </div>
+                  <div class="sched-meta-item">
+                    <span>📍 Format:</span>
+                    <strong>{{ appt.location_type or 'Online' }}</strong>
+                  </div>
+                  <div class="sched-meta-item">
+                    <span>💰 Agreed Fee:</span>
+                    <strong style="color: var(--lavender);">
+                      {% if appt.price is not none %}
+                        ₱{{ "%.2f"|format(appt.price) }}
+                      {% else %}
+                        Free Session
+                      {% endif %}
+                    </strong>
+                  </div>
+                  <div class="sched-meta-item">
+                    <span>📌 Status:</span>
+                    <span class="sched-pill upcoming">UPCOMING</span>
+                  </div>
+                </div>
+
+                {% if appt.notes %}
+                <p class="sched-notes-box"><strong>Student notes:</strong> {{ appt.notes }}</p>
+                {% endif %}
+              </div>
+            </article>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="schedule-empty-state">
+            <div class="empty-icon">📅</div>
+            <h3>No upcoming sessions scheduled</h3>
+            <p>You have no pending or upcoming appointments. When verified students book a tutoring or coaching lesson with you, your assigned sessions will appear right here.</p>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Tab 2: Past Appointments -->
+      <div class="sched-tab-content" id="tabPast" style="display: none;">
+        {% if past and past | length > 0 %}
+          <div class="schedule-card-list">
+            {% for appt in past %}
+            <article class="schedule-card past">
+              <div class="sched-card-date past-date">
+                <span class="sc-day">{{ appt.start_time.strftime('%d') }}</span>
+                <span class="sc-month">{{ appt.start_time.strftime('%b') }}</span>
+              </div>
+
+              <div class="sched-card-main">
+                <div class="sched-card-top">
+                  <div class="sched-student-info">
+                    <strong class="sched-student-name">{{ appt.student.display_name if appt.student else 'Student Learner' }}</strong>
+                  </div>
+                  <span class="sched-pill completed">{{ appt.status | upper }}</span>
+                </div>
+
+                <h3 class="sched-topic-title">{{ appt.topic }}</h3>
+
+                <div class="sched-meta-grid">
+                  <div class="sched-meta-item">
+                    <span>Date:</span>
+                    <strong>{{ format_dt_pht(appt.start_time) }}</strong>
+                  </div>
+                  <div class="sched-meta-item">
+                    <span>Credited Amount:</span>
+                    <strong style="color: #7ceea4;">₱{{ "%.2f"|format(appt.price) if appt.price is not none else "0.00" }}</strong>
+                  </div>
+                </div>
+              </div>
+            </article>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="schedule-empty-state">
+            <div class="empty-icon">📂</div>
+            <h3>No past sessions on record</h3>
+            <p>You have not completed any sessions yet. Once you conduct your sessions with students, your past logs will be stored here.</p>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Tab 3: Cancelled Appointments -->
+      <div class="sched-tab-content" id="tabCancelled" style="display: none;">
+        {% if cancelled and cancelled | length > 0 %}
+          <div class="schedule-card-list">
+            {% for appt in cancelled %}
+            <article class="schedule-card cancelled">
+              <div class="sched-card-date cancelled-date">
+                <span class="sc-day">{{ appt.start_time.strftime('%d') }}</span>
+                <span class="sc-month">{{ appt.start_time.strftime('%b') }}</span>
+              </div>
+
+              <div class="sched-card-main">
+                <div class="sched-card-top">
+                  <strong class="sched-student-name">{{ appt.student.display_name if appt.student else 'Student' }}</strong>
+                  <span class="role-pill" style="background: rgba(248,113,113,.15); color: var(--danger);">CANCELLED</span>
+                </div>
+                <h3 class="sched-topic-title">{{ appt.topic }}</h3>
+                <p class="card-subtext">{{ format_dt_pht(appt.start_time) }}</p>
+              </div>
+            </article>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="schedule-empty-state">
+            <div class="empty-icon">✅</div>
+            <h3>No cancelled appointments</h3>
+            <p>None of your booked sessions have been cancelled.</p>
+          </div>
+        {% endif %}
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // Tab switching logic
+    document.querySelectorAll('.sched-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.sched-tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const tab = btn.getAttribute('data-tab');
+        document.getElementById('tabUpcoming').style.display = tab === 'upcoming' ? 'block' : 'none';
+        document.getElementById('tabPast').style.display = tab === 'past' ? 'block' : 'none';
+        document.getElementById('tabCancelled').style.display = tab === 'cancelled' ? 'block' : 'none';
+      });
+    });
+
+    // Profile dropdown
+    const avatar = document.getElementById("userAvatar");
+    const dropdown = document.getElementById("profileDropdown");
+    if (avatar && dropdown) {
+      avatar.addEventListener("click", (e) => {
+        e.stopPropagation();
+        dropdown.classList.toggle("hidden");
+      });
+      document.addEventListener("click", () => dropdown.classList.add("hidden"));
+    }
+
+    // Logout
+    const logoutBtn = document.getElementById("logoutBtn");
+    if (logoutBtn) {
+      logoutBtn.addEventListener("click", async () => {
+        try {
+          const resp = await fetch("/api/csrf-token");
+          const data = await resp.json();
+          await fetch("/api/auth/logout", {
+            method: "POST",
+            headers: { "X-CSRFToken": data.csrf_token }
+          });
+          window.location.href = "/auth";
+        } catch (_) {
+          window.location.href = "/auth";
+        }
+      });
+    }
+  </script>
+</body>
+</html>

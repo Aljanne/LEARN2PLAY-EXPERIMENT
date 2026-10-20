@@ -193,16 +193,16 @@
     <div class="error-icon" aria-hidden="true">?</div>
     <p class="error-code">ERROR 405</p>
     <h1>Method Not Allowed</h1>
-    <p class="message">The requested method is not allowed for this resource.</p>
+    <p class="message">{{ message }}</p>
 
     <div class="actions">
-      <a class="button" href="/">Go back</a>
-      <a class="button secondary" href="/dashboard">Go to dashboard</a>
+      <a class="button" href="{{ url_for('main.dashboard') }}">Go back</a>
+      <a class="button secondary" href="{{ url_for('main.dashboard') }}">Go to dashboard</a>
     </div>
 
     <p class="help-note">
       Need help?
-      <a href="/help">Visit the help page</a>
+      <a href="{{ url_for('main.help') }}">Visit the help page</a>
     </p>
   </main>
 </body>
