@@ -2,6 +2,7 @@ from flask import Flask
 from flask_login import current_user
 from flask_migrate import Migrate
 from sqlalchemy import text
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 if __package__:
     from .config import Config
@@ -17,6 +18,11 @@ migrate = Migrate()
 
 def create_app():
     app = Flask(__name__)
+
+    # Vercel terminates HTTPS before forwarding requests to the Flask
+    # function. Trust the forwarded host and scheme so external URLs,
+    # especially the Google OAuth callback, use the public HTTPS URL.
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
     # Load application settings
     app.config.from_object(Config)
