@@ -11,6 +11,7 @@
   const btnLabel = $("btnLabel");
   const note = $("note");
   const eyeBtn = $("eyeBtn");
+  const googleLogin = $("googleLogin");
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   // ---------- helpers ----------
@@ -98,4 +99,20 @@
     event.preventDefault();
     showNote("Password reset isn't available yet.");
   });
+
+  googleLogin.addEventListener("click", () => {
+    window.location.assign("/auth/google");
+  });
+
+  const googleError = new URLSearchParams(window.location.search).get("google_error");
+  const googleMessages = {
+    not_configured: "Google login is not configured yet.",
+    invalid_state: "Google login could not be verified. Please try again.",
+    cancelled: "Google login was cancelled.",
+    invalid_response: "Google returned an invalid login response.",
+    unverified_email: "Your Google email could not be verified.",
+    inactive: "This account is inactive.",
+    failed: "Google login failed. Please try again.",
+  };
+  if (googleError) showNote(googleMessages[googleError] || googleMessages.failed);
 })();

@@ -14,6 +14,14 @@ This app uses SQLAlchemy with Supabase's PostgreSQL database. In the Supabase da
 
 Set that full connection string as `DATABASE_URL` in the Render service's environment variables. Do not commit it or put it in frontend JavaScript. The app creates the current SQLAlchemy tables on startup; `create_all()` does not migrate existing tables when models change.
 
+## Google login
+
+Create a Google OAuth web application in Google Cloud Console and add the callback URL below to its authorized redirect URIs:
+
+`http://127.0.0.1:5000/auth/google/callback` for local development, or `https://YOUR-DOMAIN/auth/google/callback` in production.
+
+Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in the environment. Set `GOOGLE_REDIRECT_URI` only when the callback URL should be explicitly fixed; otherwise the app derives it from the current request.
+
 ## Deploy to Render
 
 1. Push this repository to GitHub.

@@ -1,10 +1,15 @@
+import json
 import os
 import re
+import secrets
 import uuid
 from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 from functools import wraps
 from pathlib import Path
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
 
 from flask import (
     Blueprint,
@@ -14,6 +19,7 @@ from flask import (
     redirect,
     render_template,
     request,
+    session,
     send_from_directory,
     url_for,
 )
@@ -214,6 +220,117 @@ def register_page():
 @main.route("/api/csrf-token", methods=["GET"])
 def csrf_token():
     return jsonify({"csrf_token": generate_csrf()})
+
+
+# ---------- Google OpenID Connect Login ----------
+GOOGLE_AUTHORIZATION_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth"
+GOOGLE_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token"
+GOOGLE_USERINFO_ENDPOINT = "https://openidconnect.googleapis.com/v1/userinfo"
+
+
+def google_redirect_uri():
+    """Return the configured or request-derived Google OAuth callback URL."""
+    return current_app.config.get("GOOGLE_REDIRECT_URI") or url_for(
+        "main.google_callback", _external=True
+    )
+
+
+def google_json_request(url, *, method="GET", data=None, headers=None):
+    """Make a small JSON request without adding another runtime dependency."""
+    request_headers = {"Accept": "application/json", **(headers or {})}
+    body = None
+    if data is not None:
+        body = urlencode(data).encode("utf-8")
+        request_headers["Content-Type"] = "application/x-www-form-urlencoded"
+
+    outbound = Request(url, data=body, headers=request_headers, method=method)
+    with urlopen(outbound, timeout=10) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
+@main.route("/auth/google", methods=["GET"])
+def google_login():
+    client_id = current_app.config.get("GOOGLE_CLIENT_ID")
+    client_secret = current_app.config.get("GOOGLE_CLIENT_SECRET")
+    if not client_id or not client_secret:
+        return redirect(url_for("main.auth_page", google_error="not_configured"))
+
+    state = secrets.token_urlsafe(32)
+    session["google_oauth_state"] = state
+    params = {
+        "client_id": client_id,
+        "redirect_uri": google_redirect_uri(),
+        "response_type": "code",
+        "scope": "openid email profile",
+        "state": state,
+        "access_type": "online",
+        "prompt": "select_account",
+    }
+    return redirect(f"{GOOGLE_AUTHORIZATION_ENDPOINT}?{urlencode(params)}")
+
+
+@main.route("/auth/google/callback", methods=["GET"])
+def google_callback():
+    expected_state = session.pop("google_oauth_state", None)
+    if not expected_state or request.args.get("state") != expected_state:
+        return redirect(url_for("main.auth_page", google_error="invalid_state"))
+
+    if request.args.get("error"):
+        return redirect(url_for("main.auth_page", google_error="cancelled"))
+
+    client_id = current_app.config.get("GOOGLE_CLIENT_ID")
+    client_secret = current_app.config.get("GOOGLE_CLIENT_SECRET")
+    code = request.args.get("code")
+    if not client_id or not client_secret or not code:
+        return redirect(url_for("main.auth_page", google_error="invalid_response"))
+
+    try:
+        token_data = google_json_request(
+            GOOGLE_TOKEN_ENDPOINT,
+            method="POST",
+            data={
+                "code": code,
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "redirect_uri": google_redirect_uri(),
+                "grant_type": "authorization_code",
+            },
+        )
+        access_token = token_data.get("access_token")
+        if not access_token:
+            raise ValueError("Google did not return an access token.")
+        google_user = google_json_request(
+            GOOGLE_USERINFO_ENDPOINT,
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+    except (HTTPError, URLError, TimeoutError, ValueError, json.JSONDecodeError):
+        current_app.logger.exception("Google login failed")
+        return redirect(url_for("main.auth_page", google_error="failed"))
+
+    email = str(google_user.get("email") or "").strip().lower()
+    if not email or google_user.get("email_verified") is not True:
+        return redirect(url_for("main.auth_page", google_error="unverified_email"))
+
+    user = User.query.filter_by(email=email).first()
+    if user is None:
+        display_name = str(google_user.get("name") or email.split("@", 1)[0]).strip()
+        user = User(display_name=display_name[:80] or "Google User", email=email[:120])
+        user.set_password(secrets.token_urlsafe(32))
+        user.roles = ["student"]
+        user.profile_picture = google_user.get("picture")
+        db.session.add(user)
+    elif not user.is_active:
+        return redirect(url_for("main.auth_page", google_error="inactive"))
+
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception("Could not save Google user")
+        return redirect(url_for("main.auth_page", google_error="failed"))
+
+    login_user(user)
+    return redirect(url_for("main.dashboard"))
 
 
 # ---------- Register & Login API ----------
