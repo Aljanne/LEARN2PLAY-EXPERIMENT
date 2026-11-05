@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard | Learn2Play</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <style>
+    body { display: block; padding: 0; }
+    .admin-layout { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
+    .admin-page-header { margin-bottom: 28px; }
+    .admin-page-header h1 { color: var(--txt); font-size: 22px; font-weight: 600; }
+    .admin-page-header p  { color: var(--txt2); font-size: 14px; margin-top: 4px; }
+
+    /* Stats grid */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px; margin-bottom: 32px; }
+    .stat-card {
+      background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+      padding: 20px; display: flex; flex-direction: column; gap: 8px;
+    }
+    .stat-card .stat-label { color: var(--txt3); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+    .stat-card .stat-value { color: var(--txt); font-size: 32px; font-weight: 700; line-height: 1; }
+    .stat-card .stat-sub   { color: var(--txt2); font-size: 12px; }
+    .stat-card.urgent { border-color: rgba(248, 113, 113, 0.5); }
+    .stat-card.urgent .stat-value { color: var(--danger); }
+    .stat-card.highlight { border-color: rgba(124, 108, 245, 0.4); }
+    .stat-card.highlight .stat-value { color: var(--lavender); }
+
+    /* Quick-action cards */
+    .quick-actions { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+    .qa-card {
+      background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+      padding: 22px; text-decoration: none; transition: border-color .18s, transform .18s;
+    }
+    .qa-card:hover { border-color: rgba(124,108,245,.5); transform: translateY(-2px); }
+    .qa-icon { font-size: 26px; margin-bottom: 10px; }
+    .qa-title { color: var(--txt); font-size: 15px; font-weight: 600; }
+    .qa-desc  { color: var(--txt2); font-size: 13px; margin-top: 4px; line-height: 18px; }
+    .qa-badge {
+      display: inline-block; margin-top: 10px;
+      background: rgba(248,113,113,.18); color: var(--danger);
+      border-radius: 999px; font-size: 12px; font-weight: 600; padding: 2px 10px;
+    }
+    .qa-badge.hidden { display: none; }
+  </style>
+</head>
+<body class="dashboard">
+
+  <!-- ===== Top Navbar ===== -->
+
+  {% set active_page = 'admin' %}
+  {% include '_navbar.html' %}
+
+
+  <div class="admin-layout">
+    <div class="admin-page-header">
+      <h1>Admin Dashboard</h1>
+      <p>Overview of Learn2Play's users, sessions, and pending items.</p>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-card"><div class="stat-label">Total Users</div><div class="stat-value" id="sTotal">—</div><div class="stat-sub">all accounts</div></div>
+      <div class="stat-card highlight"><div class="stat-label">Teachers</div><div class="stat-value" id="sMentors">—</div><div class="stat-sub">approved mentors</div></div>
+      <div class="stat-card highlight"><div class="stat-label">Coaches</div><div class="stat-value" id="sCoaches">—</div><div class="stat-sub">approved coaches</div></div>
+      <div class="stat-card"><div class="stat-label">Total Sessions</div><div class="stat-value" id="sSessions">—</div><div class="stat-sub">all appointments</div></div>
+      <div class="stat-card urgent" id="pendingCard"><div class="stat-label">Pending Review</div><div class="stat-value" id="sPending">—</div><div class="stat-sub">applications</div></div>
+      <div class="stat-card urgent" id="reportsCard"><div class="stat-label">Open Reports</div><div class="stat-value" id="sReports">—</div><div class="stat-sub">need attention</div></div>
+    </div>
+
+    <!-- Quick Actions -->
+    <h2 style="color:var(--txt);font-size:16px;font-weight:600;margin-bottom:14px;">Quick Actions</h2>
+    <div class="quick-actions">
+      <a class="qa-card" href="{{ url_for('main.admin_verification') }}">
+        <div class="qa-icon">🛡️</div>
+        <div class="qa-title">Verify Teachers & Coaches</div>
+        <div class="qa-desc">Review and approve or reject pending applications from educators.</div>
+        <span class="qa-badge" id="pendingBadge">— pending</span>
+      </a>
+      <a class="qa-card" href="{{ url_for('main.admin_reports_page') }}">
+        <div class="qa-icon">🚩</div>
+        <div class="qa-title">Manage Reports</div>
+        <div class="qa-desc">Review user reports filed during sessions or in the community.</div>
+        <span class="qa-badge" id="reportsBadge">— open</span>
+      </a>
+      <a class="qa-card" href="{{ url_for('main.admin_users') }}">
+        <div class="qa-icon">👥</div>
+        <div class="qa-title">User Management</div>
+        <div class="qa-desc">View all accounts, activate/deactivate users, and assign admin rights.</div>
+      </a>
+      <a class="qa-card" href="{{ url_for('main.admin_settings') }}">
+        <div class="qa-icon">⚙️</div>
+        <div class="qa-title">Admin Settings</div>
+        <div class="qa-desc">Configure platform-wide settings for Learn2Play.</div>
+      </a>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/script.js') }}" defer></script>
+  <script>
+    // Load stats
+    fetch('/api/admin/stats', { credentials: 'same-origin' })
+      .then(r => r.json())
+      .then(data => {
+        if (!data.ok) return;
+        document.getElementById('sTotal').textContent    = data.total_users;
+        document.getElementById('sMentors').textContent  = data.total_mentors;
+        document.getElementById('sCoaches').textContent  = data.total_coaches;
+        document.getElementById('sSessions').textContent = data.total_sessions;
+        document.getElementById('sPending').textContent  = data.pending_verifications;
+        document.getElementById('sReports').textContent  = data.open_reports;
+        document.getElementById('pendingBadge').textContent = data.pending_verifications + ' pending';
+        document.getElementById('reportsBadge').textContent = data.open_reports + ' open';
+        if (data.pending_verifications === 0) document.getElementById('pendingCard').classList.remove('urgent');
+        if (data.open_reports === 0) document.getElementById('reportsCard').classList.remove('urgent');
+      });
+
+    // Dropdown toggle
+    document.getElementById('userAvatar').addEventListener('click', function() {
+      document.getElementById('profileDropdown').classList.toggle('hidden');
+    });
+    document.addEventListener('click', function(e) {
+      if (!document.getElementById('profileMenu').contains(e.target))
+        document.getElementById('profileDropdown').classList.add('hidden');
+    });
+
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', function() {
+      fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin',
+        headers: { 'X-CSRFToken': document.cookie.match(/csrf_token=([^;]+)/)?.[1] || '' }
+      }).then(() => location.href = '/auth');
+    });
+  </script>
+</body>
+</html>

@@ -151,3 +151,60 @@ class Appointment(db.Model):
 
     def __repr__(self):
         return f"<Appointment #{self.id} {self.topic} ({self.status})>"
+
+
+class Report(db.Model):
+    """A report filed by any user against any other user."""
+    __tablename__ = "reports"
+
+    id = db.Column(db.Integer, primary_key=True)
+    reporter_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    reported_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    # Optional: link to the appointment/session during which this happened
+    appointment_id = db.Column(db.Integer, db.ForeignKey("appointments.id"), nullable=True, index=True)
+
+    reason = db.Column(db.String(100), nullable=False)   # short category: Harassment, Cheating, etc.
+    details = db.Column(db.Text, nullable=True)          # free-text description
+
+    # Admin review: open | reviewed | dismissed
+    status = db.Column(db.String(20), nullable=False, default="open")
+    admin_note = db.Column(db.Text, nullable=True)
+    reviewed_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    reviewed_at = db.Column(db.DateTime, nullable=True)
+
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+
+    # Relationships
+    reporter = db.relationship("User", foreign_keys=[reporter_id], backref="filed_reports")
+    reported = db.relationship("User", foreign_keys=[reported_id], backref="received_reports")
+    appointment = db.relationship("Appointment", foreign_keys=[appointment_id])
+
+    def __repr__(self):
+        return f"<Report #{self.id} [{self.status}]>"
+
+
+class Message(db.Model):
+    """A direct message between two users.
+
+    If appointment_id is set  -> belongs to a booked session thread.
+    If appointment_id is None -> peer-to-peer chat.
+    """
+    __tablename__ = "messages"
+
+    id = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    recipient_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    # None = peer-to-peer; set = session thread
+    appointment_id = db.Column(db.Integer, db.ForeignKey("appointments.id"), nullable=True, index=True)
+
+    body = db.Column(db.Text, nullable=False)
+    is_read = db.Column(db.Boolean, default=False, nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+
+    # Relationships
+    sender = db.relationship("User", foreign_keys=[sender_id], backref="sent_messages")
+    recipient = db.relationship("User", foreign_keys=[recipient_id], backref="received_messages")
+    appointment = db.relationship("Appointment", foreign_keys=[appointment_id])
+
+    def __repr__(self):
+        return f"<Message #{self.id} from={self.sender_id} to={self.recipient_id}>"

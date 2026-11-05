@@ -1,0 +1,88 @@
+
+<header class="topbar">
+  <a class="tb-brand" href="{{ url_for('main.admin_dashboard') if current_user.is_authenticated and current_user.is_admin else url_for('main.dashboard') }}">
+    <div class="logo">L2</div>
+    <span class="brand-name">Learn2Play</span>
+  </a>
+
+  {% if current_user.is_authenticated and current_user.is_admin %}
+  <!-- ===== ADMIN NAVBAR ===== -->
+  <nav class="tb-nav" aria-label="Admin navigation">
+    <a href="{{ url_for('main.admin_dashboard') }}"  {% if active_page == 'admin' %}class="active"{% endif %}>Dashboard</a>
+    <a href="{{ url_for('main.admin_verification') }}" {% if active_page == 'verification' %}class="active"{% endif %}>Verification</a>
+    <a href="{{ url_for('main.admin_reports_page') }}" {% if active_page == 'reports' %}class="active"{% endif %}>Reports</a>
+    <a href="{{ url_for('main.admin_users') }}"      {% if active_page == 'users' %}class="active"{% endif %}>Users</a>
+    <a href="{{ url_for('main.admin_settings') }}"   {% if active_page == 'admin_settings' %}class="active"{% endif %}>Settings</a>
+  </nav>
+
+  {% else %}
+  <!-- ===== REGULAR USER NAVBAR ===== -->
+  <nav class="tb-nav" aria-label="Main navigation">
+    <a href="{{ url_for('main.dashboard') }}"  {% if active_page == 'dashboard' %}class="active"{% endif %}>Dashboard</a>
+    {% if current_user.is_authenticated and ('mentor' in current_user.roles or 'coach' in current_user.roles) %}
+      <a href="{{ url_for('main.schedule') }}" {% if active_page == 'schedule' %}class="active"{% endif %}>Schedule</a>
+    {% endif %}
+    <a href="{{ url_for('main.sessions') }}"  {% if active_page == 'sessions' %}class="active"{% endif %}>My Sessions</a>
+    <a href="{{ url_for('main.messages_page') }}" {% if active_page == 'messages' %}class="active"{% endif %}>Messages</a>
+    <a href="{{ url_for('main.profile') }}"   {% if active_page == 'profile' %}class="active"{% endif %}>Profile</a>
+    <a href="{{ url_for('main.settings') }}"  {% if active_page == 'settings' %}class="active"{% endif %}>Settings</a>
+    <a href="{{ url_for('main.help') }}"      {% if active_page == 'help' %}class="active"{% endif %}>Help</a>
+  </nav>
+  {% endif %}
+
+  <!-- ===== Profile Dropdown (shared by both navbars) ===== -->
+  <div class="tb-right">
+    <div class="tb-profile" id="profileMenu">
+      <button class="tb-avatar" id="userAvatar" type="button"
+              aria-haspopup="menu" aria-expanded="false" aria-controls="profileDropdown">
+        {% if current_user.is_authenticated and current_user.profile_picture %}
+          <img src="{{ current_user.profile_picture }}" alt="Avatar" class="avatar-img">
+        {% else %}
+          {{ current_user.display_name[:1]|upper if current_user.is_authenticated and current_user.display_name else 'U' }}
+        {% endif %}
+      </button>
+
+      <div class="dropdown hidden" id="profileDropdown" role="menu">
+        <div class="dd-header">
+          <div class="dd-name">{{ current_user.display_name if current_user.is_authenticated else 'User' }}</div>
+          <div class="dd-email">{{ current_user.email if current_user.is_authenticated else '' }}</div>
+          <div class="dd-roles">
+            {% if current_user.is_authenticated %}
+              {% if current_user.is_admin %}
+                <span class="pill a">Admin</span>
+              {% endif %}
+              {% for role in current_user.roles %}
+                <span class="pill {{ 'g' if role == 'coach' else 'a' }}">
+                  {{ 'Teacher' if role == 'mentor' else (role|title) }}
+                </span>
+              {% endfor %}
+            {% endif %}
+          </div>
+        </div>
+
+        {% if current_user.is_authenticated and current_user.is_admin %}
+          <!-- Admin dropdown items -->
+          <a class="dd-item" role="menuitem" href="{{ url_for('main.dashboard') }}">Home</a>
+          <a class="dd-item" role="menuitem" href="{{ url_for('main.admin_dashboard') }}">Admin Dashboard</a>
+          <a class="dd-item" role="menuitem" href="{{ url_for('main.admin_verification') }}">Verification</a>
+          <a class="dd-item" role="menuitem" href="{{ url_for('main.admin_reports_page') }}">Reports</a>
+          <a class="dd-item" role="menuitem" href="{{ url_for('main.admin_users') }}">Users</a>
+          <a class="dd-item" role="menuitem" href="{{ url_for('main.admin_settings') }}">Settings</a>
+        {% else %}
+          <!-- Regular user dropdown items -->
+          <a class="dd-item" role="menuitem" href="{{ url_for('main.profile') }}">View profile</a>
+          {% if current_user.is_authenticated and ('mentor' in current_user.roles or 'coach' in current_user.roles) %}
+            <a class="dd-item" role="menuitem" href="{{ url_for('main.schedule') }}">Teaching Schedule</a>
+          {% endif %}
+          <a class="dd-item" role="menuitem" href="{{ url_for('main.sessions') }}">My Sessions</a>
+          <a class="dd-item" role="menuitem" href="{{ url_for('main.messages_page') }}">Messages</a>
+          <a class="dd-item" role="menuitem" href="{{ url_for('main.settings') }}">Settings</a>
+          <a class="dd-item" role="menuitem" href="{{ url_for('main.help') }}">Help &amp; Support</a>
+        {% endif %}
+
+        <div class="dd-sep"></div>
+        <button type="button" class="dd-item danger" id="logoutBtn" role="menuitem">Log out</button>
+      </div>
+    </div>
+  </div>
+</header>
