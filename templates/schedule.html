@@ -9,57 +9,10 @@
 <body class="dashboard schedule-body">
 
   <!-- Top Navbar -->
-  <header class="topbar">
-    <a class="tb-brand" href="{{ url_for('main.dashboard') }}">
-      <div class="logo">L2</div>
-      <span class="brand-name">Learn2Play</span>
-    </a>
 
-    <!-- Unified Navigation -->
-    <nav class="tb-nav" aria-label="Main navigation">
-      <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
-      <a href="{{ url_for('main.schedule') }}" class="active">Schedule</a>
-      <a href="{{ url_for('main.sessions') }}">My Sessions</a>
-      <a href="{{ url_for('main.profile') }}">Profile</a>
-      <a href="{{ url_for('main.settings') }}">Settings</a>
-      <a href="{{ url_for('main.help') }}">Help</a>
-    </nav>
+  {% set active_page = 'schedule' %}
+  {% include '_navbar.html' %}
 
-    <!-- Profile Dropdown -->
-    <div class="tb-right">
-      <div class="tb-profile" id="profileMenu">
-        <button class="tb-avatar" id="userAvatar" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="profileDropdown">
-          {% if current_user.is_authenticated and current_user.profile_picture %}
-            <img src="{{ current_user.profile_picture }}" alt="Avatar" class="avatar-img">
-          {% else %}
-            {{ current_user.display_name[:1] | upper if current_user.is_authenticated and current_user.display_name else 'U' }}
-          {% endif %}
-        </button>
-
-        <div class="dropdown hidden" id="profileDropdown" role="menu">
-          <div class="dd-header">
-            <div class="dd-name" id="menuName">{{ current_user.display_name }}</div>
-            <div class="dd-email" id="menuEmail">{{ current_user.email }}</div>
-            <div class="dd-roles" id="menuRoles">
-              {% for role in current_user.roles %}
-                <span class="pill {{ 'g' if role == 'coach' else 'a' }}">
-                  {{ "Teacher" if role == "mentor" else (role | title) }}
-                </span>
-              {% endfor %}
-            </div>
-          </div>
-
-          <a class="dd-item" role="menuitem" href="{{ url_for('main.profile') }}">View profile</a>
-          <a class="dd-item" role="menuitem" href="{{ url_for('main.schedule') }}">Teaching Schedule</a>
-          <a class="dd-item" role="menuitem" href="{{ url_for('main.sessions') }}">My sessions</a>
-          <a class="dd-item" role="menuitem" href="{{ url_for('main.settings') }}">Settings</a>
-          <a class="dd-item" role="menuitem" href="{{ url_for('main.help') }}">Help &amp; support</a>
-          <div class="dd-sep"></div>
-          <button type="button" class="dd-item danger" id="logoutBtn" role="menuitem">Log out</button>
-        </div>
-      </div>
-    </div>
-  </header>
 
   <!-- Schedule Page Content -->
   <main class="schedule-page">

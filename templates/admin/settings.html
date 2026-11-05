@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Settings | Learn2Play</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <style>
+    body { display: block; padding: 0; }
+    .admin-layout { max-width: 820px; margin: 0 auto; padding: 32px 24px 80px; }
+    .admin-page-header { margin-bottom: 28px; }
+    .admin-page-header h1 { color: var(--txt); font-size: 22px; font-weight: 600; }
+    .admin-page-header p  { color: var(--txt2); font-size: 14px; margin-top: 4px; }
+
+    .settings-section {
+      background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+      padding: 24px; margin-bottom: 20px;
+    }
+    .settings-section h2 { color: var(--txt); font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+    .settings-section .sec-desc { color: var(--txt2); font-size: 13px; margin-bottom: 20px; line-height: 18px; }
+
+    .setting-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      padding: 14px 0; border-bottom: 1px solid var(--line);
+    }
+    .setting-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .setting-row:first-of-type { padding-top: 0; }
+    .sr-label { color: var(--txt); font-size: 14px; font-weight: 500; }
+    .sr-desc  { color: var(--txt3); font-size: 12px; margin-top: 2px; line-height: 16px; }
+
+    /* Toggle switch */
+    .toggle-wrap { flex-shrink: 0; }
+    .toggle { position: relative; display: inline-block; width: 44px; height: 24px; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-track {
+      position: absolute; inset: 0; background: var(--line); border-radius: 999px;
+      cursor: pointer; transition: background .2s;
+    }
+    .toggle input:checked + .toggle-track { background: var(--purple); }
+    .toggle-thumb {
+      position: absolute; top: 3px; left: 3px;
+      width: 18px; height: 18px; border-radius: 50%; background: #fff;
+      transition: transform .2s; pointer-events: none;
+    }
+    .toggle input:checked ~ .toggle-thumb { transform: translateX(20px); }
+
+    .coming-soon {
+      display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px;
+      background: rgba(251,191,36,.14); color: var(--gold); margin-left: 8px; vertical-align: middle;
+    }
+
+    .toast {
+      position: fixed; bottom: 24px; right: 24px; z-index: 100;
+      background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+      padding: 12px 18px; color: var(--txt); font-size: 14px; max-width: 320px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.4); transform: translateY(80px); opacity: 0;
+      transition: all .3s ease; pointer-events: none;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.ok  { border-color: rgba(74,222,128,.4);  }
+    .toast.err { border-color: rgba(248,113,113,.4); }
+  </style>
+</head>
+<body class="dashboard">
+
+
+  {% set active_page = 'admin_settings' %}
+  {% include '_navbar.html' %}
+
+
+  <div class="admin-layout">
+    <div class="admin-page-header">
+      <h1>Admin Settings</h1>
+      <p>Platform-wide configuration for Learn2Play. More settings will be added here as needed.</p>
+    </div>
+
+    <!-- Platform section -->
+    <div class="settings-section">
+      <h2>Platform</h2>
+      <p class="sec-desc">Control how Learn2Play behaves for all users.</p>
+
+      <div class="setting-row">
+        <div>
+          <div class="sr-label">Maintenance Mode <span class="coming-soon">Coming Soon</span></div>
+          <div class="sr-desc">When enabled, all users except admins will see a maintenance page instead of the dashboard.</div>
+        </div>
+        <div class="toggle-wrap">
+          <label class="toggle" title="Coming soon">
+            <input type="checkbox" id="toggleMaintenance" disabled>
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <div>
+          <div class="sr-label">New Registrations <span class="coming-soon">Coming Soon</span></div>
+          <div class="sr-desc">Disable to prevent any new account sign-ups. Existing users can still log in.</div>
+        </div>
+        <div class="toggle-wrap">
+          <label class="toggle" title="Coming soon">
+            <input type="checkbox" id="toggleRegistrations" disabled checked>
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Verification section -->
+    <div class="settings-section">
+      <h2>Verification</h2>
+      <p class="sec-desc">Settings for the teacher and coach review workflow.</p>
+
+      <div class="setting-row">
+        <div>
+          <div class="sr-label">Auto-approve Student Accounts</div>
+          <div class="sr-desc">Students (no teacher/coach role) are always auto-approved on registration. This cannot be disabled.</div>
+        </div>
+        <div class="toggle-wrap">
+          <label class="toggle">
+            <input type="checkbox" checked disabled>
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <div>
+          <div class="sr-label">Require Credentials for Teacher/Coach <span class="coming-soon">Always On</span></div>
+          <div class="sr-desc">Educators must upload at least one document (certificate, diploma, etc.) when applying.</div>
+        </div>
+        <div class="toggle-wrap">
+          <label class="toggle">
+            <input type="checkbox" checked disabled>
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reports section -->
+    <div class="settings-section">
+      <h2>Reports</h2>
+      <p class="sec-desc">Configuration for the user reporting system.</p>
+      <div class="setting-row">
+        <div>
+          <div class="sr-label">Allow Peer-to-Peer Reports</div>
+          <div class="sr-desc">Any user can report any other user. Currently always enabled.</div>
+        </div>
+        <div class="toggle-wrap">
+          <label class="toggle">
+            <input type="checkbox" checked disabled>
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Danger zone -->
+    <div class="settings-section" style="border-color: rgba(248,113,113,.3);">
+      <h2 style="color: var(--danger);">Danger Zone</h2>
+      <p class="sec-desc">These actions are coming soon and will require extra confirmation when implemented.</p>
+      <div class="setting-row">
+        <div>
+          <div class="sr-label">Export All Data <span class="coming-soon">Coming Soon</span></div>
+          <div class="sr-desc">Download a full export of all users, sessions, and reports as JSON.</div>
+        </div>
+        <button class="ua-btn" disabled style="opacity:.4;cursor:default;padding:8px 16px;border-radius:8px;font-size:13px;border:1px solid var(--line);background:var(--bg);color:var(--txt2);">Export</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="{{ url_for('static', filename='js/script.js') }}" defer></script>
+  <script>
+    document.getElementById('userAvatar').addEventListener('click', () =>
+      document.getElementById('profileDropdown').classList.toggle('hidden'));
+    document.addEventListener('click', e => {
+      if (!document.getElementById('profileMenu').contains(e.target))
+        document.getElementById('profileDropdown').classList.add('hidden');
+    });
+    document.getElementById('logoutBtn').addEventListener('click', () =>
+      fetch('/api/auth/logout', { method:'POST', credentials:'same-origin' }).then(() => location.href = '/auth'));
+  </script>
+</body>
+</html>

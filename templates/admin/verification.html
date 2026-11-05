@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verification | Admin | Learn2Play</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <style>
+    body { display: block; padding: 0; }
+    .admin-layout { max-width: 1100px; margin: 0 auto; padding: 32px 24px 80px; }
+    .admin-page-header { margin-bottom: 24px; }
+    .admin-page-header h1 { color: var(--txt); font-size: 22px; font-weight: 600; }
+    .admin-page-header p  { color: var(--txt2); font-size: 14px; margin-top: 4px; }
+
+    /* Filter tabs */
+    .filter-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+    .ftab {
+      padding: 8px 18px; border-radius: 999px; font-size: 13px; font-weight: 500;
+      background: var(--card); border: 1px solid var(--line); color: var(--txt2);
+      cursor: pointer; transition: all .18s;
+    }
+    .ftab:hover { color: var(--txt); border-color: var(--purple); }
+    .ftab.active { background: var(--purple); color: #fff; border-color: var(--purple); }
+
+    /* Application cards */
+    .app-list { display: flex; flex-direction: column; gap: 16px; }
+    .app-card {
+      background: var(--card); border: 1px solid var(--line);
+      border-radius: 14px; padding: 22px; display: flex; flex-direction: column; gap: 14px;
+    }
+    .app-card-top { display: flex; align-items: center; gap: 14px; }
+    .app-avatar {
+      width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg,#f472b6,#a855f7);
+      display: grid; place-items: center; color:#fff; font-size:16px; font-weight:600;
+    }
+    .app-avatar img { width:100%; height:100%; border-radius:50%; object-fit:cover; }
+    .app-info { flex: 1; min-width: 0; }
+    .app-name { color: var(--txt); font-size: 15px; font-weight: 600; }
+    .app-email { color: var(--txt3); font-size: 12px; margin-top: 2px; }
+    .app-meta { display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+    .app-role-badge {
+      font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 999px;
+      background: rgba(124,108,245,.2); color: var(--lavender);
+    }
+    .app-role-badge.coach { background: rgba(74,222,128,.16); color: #7ceea4; }
+    .app-date { color: var(--txt3); font-size: 12px; }
+
+    .app-bio { color: var(--txt2); font-size: 13px; line-height: 19px; }
+    .app-links { display: flex; flex-wrap: wrap; gap: 8px; }
+    .app-link {
+      font-size: 12px; color: var(--lavender); text-decoration: none;
+      background: rgba(124,108,245,.1); padding: 4px 10px; border-radius: 6px;
+    }
+    .app-link:hover { text-decoration: underline; }
+
+    .app-creds { display: flex; flex-wrap: wrap; gap: 8px; }
+    .cred-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 500;
+      background: var(--bg); border: 1px solid var(--line); color: var(--txt2);
+      text-decoration: none; transition: border-color .18s, color .18s;
+    }
+    .cred-btn:hover { border-color: var(--purple); color: var(--txt); }
+
+    .app-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .btn-approve {
+      padding: 9px 20px; border-radius: 9px; font-size: 13px; font-weight: 600;
+      background: rgba(74,222,128,.16); color: #4ade80; border: 1px solid rgba(74,222,128,.35);
+      cursor: pointer; transition: all .18s;
+    }
+    .btn-approve:hover { background: rgba(74,222,128,.28); }
+    .btn-reject {
+      padding: 9px 20px; border-radius: 9px; font-size: 13px; font-weight: 600;
+      background: rgba(248,113,113,.12); color: var(--danger); border: 1px solid rgba(248,113,113,.3);
+      cursor: pointer; transition: all .18s;
+    }
+    .btn-reject:hover { background: rgba(248,113,113,.22); }
+    .btn-loading { opacity: .6; pointer-events: none; }
+
+    .reject-wrap { display: none; flex-direction: column; gap: 8px; margin-top: 2px; }
+    .reject-wrap.open { display: flex; }
+    .reject-input {
+      width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+      padding: 10px 12px; color: var(--txt); font-size: 13px; resize: vertical; min-height: 70px;
+    }
+    .reject-input:focus { outline: none; border-color: var(--purple); }
+    .reject-submit {
+      align-self: flex-end; padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 600;
+      background: var(--danger); color: #fff; cursor: pointer; border: none; transition: opacity .18s;
+    }
+    .reject-submit:hover { opacity: .85; }
+
+    .status-pill {
+      display: inline-block; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 999px;
+    }
+    .status-pill.approved { background: rgba(74,222,128,.16); color: #4ade80; }
+    .status-pill.rejected { background: rgba(248,113,113,.14); color: var(--danger); }
+
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--txt3); }
+    .empty-state .ei { font-size: 36px; margin-bottom: 10px; }
+    .empty-state h3 { color: var(--txt2); font-size: 16px; }
+
+    .toast {
+      position: fixed; bottom: 24px; right: 24px; z-index: 100;
+      background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+      padding: 12px 18px; color: var(--txt); font-size: 14px; max-width: 320px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.4); transform: translateY(80px); opacity: 0;
+      transition: all .3s ease; pointer-events: none;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.ok  { border-color: rgba(74,222,128,.4);  }
+    .toast.err { border-color: rgba(248,113,113,.4); }
+  </style>
+</head>
+<body class="dashboard">
+
+  <!-- ===== Top Navbar ===== -->
+
+  {% set active_page = 'verification' %}
+  {% include '_navbar.html' %}
+
+
+  <div class="admin-layout">
+    <div class="admin-page-header">
+      <h1>Teacher & Coach Verification</h1>
+      <p>Review applications from educators who want to join Learn2Play as verified providers.</p>
+    </div>
+
+    <div class="filter-tabs">
+      <button class="ftab active" data-status="pending">Pending</button>
+      <button class="ftab" data-status="approved">Approved</button>
+      <button class="ftab" data-status="rejected">Rejected</button>
+    </div>
+
+    <div class="app-list" id="appList">
+      <div class="empty-state"><div class="ei">⏳</div><h3>Loading applications…</h3></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="{{ url_for('static', filename='js/script.js') }}" defer></script>
+  <script>
+    let currentStatus = 'pending';
+const list = document.getElementById('appList');
+const toast = document.getElementById('toast');
+
+let csrfToken = '';
+
+async function getCsrfToken() {
+  const res = await fetch('/api/csrf-token', {
+    credentials: 'same-origin'
+  });
+
+  const data = await res.json();
+
+  if (!res.ok || !data.csrf_token) {
+    throw new Error('Unable to retrieve CSRF token.');
+  }
+
+  csrfToken = data.csrf_token;
+}
+
+    function showToast(msg, type = 'ok') {
+      toast.textContent = msg;
+      toast.className = 'toast show ' + type;
+      setTimeout(() => { toast.className = 'toast'; }, 3500);
+    }
+
+    function roleLabel(r) { return r === 'mentor' ? 'Teacher' : 'Coach'; }
+    function fmt(iso) {
+      return new Date(iso).toLocaleDateString('en-PH', { year:'numeric', month:'short', day:'numeric' });
+    }
+
+    async function loadApps(status) {
+      list.innerHTML = '<div class="empty-state"><div class="ei">⏳</div><h3>Loading…</h3></div>';
+      const res = await fetch('/api/admin/applications?status=' + status, { credentials: 'same-origin' });
+      const data = await res.json();
+      if (!data.ok || !data.applications.length) {
+        list.innerHTML = '<div class="empty-state"><div class="ei">📭</div><h3>No ' + status + ' applications.</h3></div>';
+        return;
+      }
+      list.innerHTML = '';
+      data.applications.forEach(app => renderCard(app));
+    }
+
+    function renderCard(app) {
+      const isPending = app.status === 'pending';
+      const card = document.createElement('div');
+      card.className = 'app-card';
+      card.id = 'app-' + app.id;
+
+      const avatarContent = `<div class="app-avatar">${app.user.name[0].toUpperCase()}</div>`;
+      const roleClass = app.role === 'coach' ? 'coach' : '';
+      const linksHtml = app.links.map(l =>
+        `<a class="app-link" href="${l}" target="_blank" rel="noopener">🔗 ${l.replace(/^https?:\/\//, '')}</a>`
+      ).join('');
+      const credsHtml = app.credentials.map(c =>
+        `<a class="cred-btn" href="${c.url}" target="_blank">📄 ${c.name}</a>`
+      ).join('');
+      const statusHtml = isPending ? '' :
+        `<span class="status-pill ${app.status}">${app.status.charAt(0).toUpperCase() + app.status.slice(1)}</span>`;
+      const actionsHtml = isPending ? `
+        <button class="btn-approve" onclick="approve(${app.id}, this)">✅ Approve</button>
+        <button class="btn-reject"  onclick="toggleReject(${app.id})">❌ Reject</button>
+        <div class="reject-wrap" id="rw-${app.id}">
+          <textarea class="reject-input" id="reason-${app.id}" placeholder="Reason for rejection (optional)…"></textarea>
+          <button class="reject-submit" onclick="reject(${app.id}, this)">Confirm Rejection</button>
+        </div>` : statusHtml;
+
+      card.innerHTML = `
+        <div class="app-card-top">
+          ${avatarContent}
+          <div class="app-info">
+            <div class="app-name">${app.user.name}</div>
+            <div class="app-email">${app.user.email}</div>
+            <div class="app-meta">
+              <span class="app-role-badge ${roleClass}">Applied as: ${roleLabel(app.role)}</span>
+              <span class="app-date">Submitted ${fmt(app.submitted_at)}</span>
+            </div>
+          </div>
+        </div>
+        ${app.bio ? `<div class="app-bio">${app.bio}</div>` : ''}
+        ${linksHtml ? `<div class="app-links">${linksHtml}</div>` : ''}
+        ${credsHtml ? `<div><div style="color:var(--txt3);font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">Credentials</div><div class="app-creds">${credsHtml}</div></div>` : ''}
+        <div class="app-actions">${actionsHtml}</div>
+      `;
+      list.appendChild(card);
+    }
+
+    function toggleReject(id) {
+      const rw = document.getElementById('rw-' + id);
+      rw.classList.toggle('open');
+    }
+
+    async function approve(id, btn) {
+  btn.classList.add('btn-loading');
+  btn.textContent = 'Approving…';
+
+  try {
+    const res = await fetch('/api/admin/applications/' + id + '/approve', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken
+      },
+      body: JSON.stringify({})
+    });
+
+    const data = await res.json();
+
+    if (data.ok) {
+      document.getElementById('app-' + id).remove();
+      showToast('Application approved!', 'ok');
+    } else {
+      showToast(data.message || 'Error.', 'err');
+      btn.classList.remove('btn-loading');
+      btn.textContent = '✅ Approve';
+    }
+  } catch (err) {
+    console.error(err);
+    showToast('Something went wrong. Please try again.', 'err');
+    btn.classList.remove('btn-loading');
+    btn.textContent = '✅ Approve';
+  }
+}
+
+    async function reject(id, btn) {
+  btn.classList.add('btn-loading');
+
+  const reason = document.getElementById('reason-' + id).value;
+
+  try {
+    const res = await fetch('/api/admin/applications/' + id + '/reject', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken
+      },
+      body: JSON.stringify({ reason })
+    });
+
+    const data = await res.json();
+
+    if (data.ok) {
+      document.getElementById('app-' + id).remove();
+      showToast('Application rejected.', 'ok');
+    } else {
+      showToast(data.message || 'Error.', 'err');
+      btn.classList.remove('btn-loading');
+    }
+  } catch (err) {
+    console.error(err);
+    showToast('Something went wrong. Please try again.', 'err');
+    btn.classList.remove('btn-loading');
+  }
+}
+
+    // Filter tabs
+    document.querySelectorAll('.ftab').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.ftab').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        currentStatus = this.dataset.status;
+        loadApps(currentStatus);
+      });
+    });
+
+    // Dropdown
+    document.getElementById('userAvatar').addEventListener('click', function() {
+      document.getElementById('profileDropdown').classList.toggle('hidden');
+    });
+    document.addEventListener('click', function(e) {
+      if (!document.getElementById('profileMenu').contains(e.target))
+        document.getElementById('profileDropdown').classList.add('hidden');
+    });
+    document.getElementById('logoutBtn').addEventListener('click', function() {
+      fetch('/api/auth/logout', { method:'POST', credentials:'same-origin' }).then(() => location.href = '/auth');
+    });
+
+    async function initializeVerificationPage() {
+  try {
+    await getCsrfToken();
+    await loadApps('pending');
+  } catch (err) {
+    console.error(err);
+    showToast('Failed to initialize verification page.', 'err');
+  }
+}
+
+initializeVerificationPage();
+  </script>
+</body>
+</html>

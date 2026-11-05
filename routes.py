@@ -29,10 +29,10 @@ from werkzeug.utils import secure_filename
 
 if __package__:
     from .extensions import db
-    from .models import Appointment, Credential, RoleApplication, User, utcnow
+    from .models import Appointment, Credential, Message, Report, RoleApplication, User, utcnow
 else:
     from extensions import db
-    from models import Appointment, Credential, RoleApplication, User, utcnow
+    from models import Appointment, Credential, Message, Report, RoleApplication, User, utcnow
 
 main = Blueprint("main", __name__)
 
@@ -197,7 +197,11 @@ def check_upload(file):
 @main.route("/")
 def home():
     if current_user.is_authenticated:
+        if current_user.is_admin:
+            return redirect(url_for("main.admin_dashboard"))
+
         return redirect(url_for("main.dashboard"))
+
     return render_template("landing.html")
 
 
@@ -376,12 +380,20 @@ def login():
         return error("Your teacher/coach application was not approved.", 403)
 
     login_user(user, remember=remember is True)
+
+# Redirect admins and regular users to their respective dashboards
+    redirect_url = (
+        url_for("main.admin_dashboard")
+        if user.is_admin
+        else url_for("main.dashboard")
+    )
+
     return jsonify({
         "ok": True,
         "message": "Logged in successfully.",
+        "redirect": redirect_url,
         "user": user_data(user),
     })
-
 
 @main.route("/api/auth/logout", methods=["POST"])
 @login_required
@@ -761,6 +773,10 @@ def get_provider_schedule_api():
 @main.route("/dashboard", methods=["GET"])
 @login_required
 def dashboard():
+
+    if current_user.is_admin:
+        return redirect(url_for("main.admin_dashboard"))
+    
     next_session = None
     prev_session = None
 
@@ -781,11 +797,18 @@ def dashboard():
             .first()
         )
 
+    # Pending provider roles: applied but not yet approved
+    pending_provider_roles = []
+    if current_user.is_authenticated:
+        apps = RoleApplication.query.filter_by(user_id=current_user.id, status="pending").all()
+        pending_provider_roles = [a.role for a in apps]
+
     return render_template(
         "dashboard.html",
         next_session=next_session,
         prev_session=prev_session,
         format_dt_pht=format_dt_pht,
+        pending_provider_roles=pending_provider_roles,
     )
 
 
@@ -877,7 +900,479 @@ def help():
     return render_template("help.html")
 
 
+# messages route moved to messages_page() below
+
+# ============================================================
+# ROUTES ADDITION — Admin pages, Reports API, Messages API,
+# Verification-status API, and pending-provider guard.
+# Paste/append this block at the END of routes.py, before
+# or after the existing @main.route("/messages") handler
+# (replace the stub messages route entirely).
+# ============================================================
+
+# Update the import at the top of routes.py to include Report and Message:
+# from .models import Appointment, Credential, Message, Report, RoleApplication, User, utcnow
+
+# ---------- Pending-provider helper ----------
+
+def get_pending_roles(user):
+    """Return the list of roles the user has applied for but not yet been approved."""
+    apps = RoleApplication.query.filter_by(user_id=user.id, status="pending").all()
+    return [a.role for a in apps]
+
+
+# ---------- Admin Stats API ----------
+
+@main.route("/api/admin/stats", methods=["GET"])
+@admin_required
+def admin_stats():
+    pending_count = RoleApplication.query.filter_by(status="pending").count()
+    total_users = User.query.count()
+    total_mentors = sum(1 for u in User.query.all() if "mentor" in u.roles)
+    total_coaches = sum(1 for u in User.query.all() if "coach" in u.roles)
+    total_sessions = Appointment.query.count()
+    open_reports = Report.query.filter_by(status="open").count()
+    return jsonify({
+        "ok": True,
+        "pending_verifications": pending_count,
+        "total_users": total_users,
+        "total_mentors": total_mentors,
+        "total_coaches": total_coaches,
+        "total_sessions": total_sessions,
+        "open_reports": open_reports,
+    })
+
+
+# ---------- Admin User Management API ----------
+
+@main.route("/api/admin/users", methods=["GET"])
+@admin_required
+def admin_list_users():
+    users = User.query.order_by(User.id.asc()).all()
+    items = []
+    for u in users:
+        pending = RoleApplication.query.filter_by(user_id=u.id, status="pending").all()
+        items.append({
+            "id": u.id,
+            "name": u.display_name,
+            "email": u.email,
+            "roles": u.roles,
+            "is_admin": u.is_admin,
+            "is_active": u.is_active,
+            "pending_roles": [a.role for a in pending],
+        })
+    return jsonify({"ok": True, "users": items})
+
+
+@main.route("/api/admin/users/<int:user_id>/toggle-active", methods=["POST"])
+@admin_required
+def admin_toggle_user_active(user_id):
+    user = db.session.get(User, user_id)
+    if not user:
+        return error("User not found.", 404)
+    if user.id == current_user.id:
+        return error("You cannot deactivate your own account.", 400)
+    user.is_active = not user.is_active
+    db.session.commit()
+    state = "activated" if user.is_active else "deactivated"
+    return jsonify({"ok": True, "message": f"User {state}.", "is_active": user.is_active})
+
+
+@main.route("/api/admin/users/<int:user_id>/set-admin", methods=["POST"])
+@admin_required
+def admin_set_admin(user_id):
+    user = db.session.get(User, user_id)
+    if not user:
+        return error("User not found.", 404)
+    if user.id == current_user.id:
+        return error("You cannot change your own admin status.", 400)
+    data = request.get_json(silent=True) or {}
+    user.is_admin = bool(data.get("is_admin", False))
+    db.session.commit()
+    return jsonify({"ok": True, "message": "Admin status updated.", "is_admin": user.is_admin})
+
+
+# ---------- Reports API ----------
+
+REPORT_REASONS = [
+    "Harassment",
+    "Inappropriate content",
+    "Cheating / unfair play",
+    "No-show / missed session",
+    "Unprofessional conduct",
+    "Fake credentials",
+    "Spam",
+    "Other",
+]
+
+
+@main.route("/api/reports", methods=["POST"])
+@login_required
+def submit_report():
+    data = request.get_json(silent=True) or {}
+    reported_id = data.get("reported_id")
+    reason = (data.get("reason") or "").strip()
+    details = (data.get("details") or "").strip()
+    appointment_id = data.get("appointment_id")  # optional
+
+    if not reported_id:
+        return error("Please specify who you are reporting.", field="reported_id")
+    if reported_id == current_user.id:
+        return error("You cannot report yourself.")
+    reported_user = db.session.get(User, reported_id)
+    if not reported_user or not reported_user.is_active:
+        return error("That user does not exist.", 404)
+    if reason not in REPORT_REASONS:
+        return error("Please select a valid reason.", field="reason")
+    if details and len(details) > 2000:
+        return error("Details must not exceed 2000 characters.", field="details")
+
+    appt = None
+    if appointment_id:
+        appt = db.session.get(Appointment, appointment_id)
+        if not appt or (appt.student_id != current_user.id and appt.provider_id != current_user.id):
+            return error("Invalid session reference.", field="appointment_id")
+
+    try:
+        report = Report(
+            reporter_id=current_user.id,
+            reported_id=reported_id,
+            appointment_id=appt.id if appt else None,
+            reason=reason,
+            details=details or None,
+        )
+        db.session.add(report)
+        db.session.commit()
+        return jsonify({"ok": True, "message": "Your report has been submitted. We'll review it shortly."}), 201
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception("Failed to save report")
+        return error("Failed to submit report. Please try again.", 500)
+
+
+@main.route("/api/admin/reports", methods=["GET"])
+@admin_required
+def admin_list_reports():
+    status_filter = request.args.get("status", "open")
+    query = Report.query
+    if status_filter != "all":
+        query = query.filter_by(status=status_filter)
+    reports = query.order_by(Report.created_at.desc()).all()
+
+    items = []
+    for r in reports:
+        reporter = db.session.get(User, r.reporter_id)
+        reported = db.session.get(User, r.reported_id)
+        items.append({
+            "id": r.id,
+            "reason": r.reason,
+            "details": r.details or "",
+            "status": r.status,
+            "admin_note": r.admin_note or "",
+            "created_at": r.created_at.isoformat(),
+            "reviewed_at": r.reviewed_at.isoformat() if r.reviewed_at else None,
+            "reporter": {"id": reporter.id, "name": reporter.display_name, "email": reporter.email} if reporter else None,
+            "reported": {"id": reported.id, "name": reported.display_name, "email": reported.email} if reported else None,
+            "appointment_id": r.appointment_id,
+        })
+    return jsonify({"ok": True, "reports": items})
+
+
+@main.route("/api/admin/reports/<int:report_id>/<action>", methods=["POST"])
+@admin_required
+def admin_review_report(report_id, action):
+    if action not in {"reviewed", "dismissed"}:
+        return error("Unknown action.", 404)
+    report = db.session.get(Report, report_id)
+    if not report:
+        return error("Report not found.", 404)
+    data = request.get_json(silent=True) or {}
+    report.status = action
+    report.admin_note = str(data.get("note") or "").strip()[:1000] or None
+    report.reviewed_by = current_user.id
+    report.reviewed_at = utcnow()
+    db.session.commit()
+    return jsonify({"ok": True, "message": f"Report marked as {action}."})
+
+
+@main.route("/api/report-reasons", methods=["GET"])
+@login_required
+def report_reasons():
+    return jsonify({"ok": True, "reasons": REPORT_REASONS})
+
+
+# ---------- Verification Status API ----------
+
+@main.route("/api/me/verification-status", methods=["GET"])
+@login_required
+def verification_status():
+    pending = RoleApplication.query.filter_by(user_id=current_user.id, status="pending").all()
+    approved = RoleApplication.query.filter_by(user_id=current_user.id, status="approved").all()
+    rejected = RoleApplication.query.filter_by(user_id=current_user.id, status="rejected").all()
+    return jsonify({
+        "ok": True,
+        "pending_roles": [a.role for a in pending],
+        "approved_roles": [a.role for a in approved],
+        "rejected_roles": [a.role for a in rejected],
+    })
+
+
+# ---------- Messages / Chat API ----------
+
+@main.route("/api/messages/threads", methods=["GET"])
+@login_required
+def message_threads():
+    """Return all conversation threads for the current user, split by type."""
+    uid = current_user.id
+
+    # Peer-to-peer threads (appointment_id IS NULL)
+    p2p_raw = Message.query.filter(
+        Message.appointment_id == None,  # noqa: E711
+        (Message.sender_id == uid) | (Message.recipient_id == uid),
+    ).order_by(Message.created_at.desc()).all()
+
+    # Group by the other user
+    p2p_map = {}
+    for msg in p2p_raw:
+        other_id = msg.recipient_id if msg.sender_id == uid else msg.sender_id
+        if other_id not in p2p_map:
+            other = db.session.get(User, other_id)
+            unread = Message.query.filter_by(
+                sender_id=other_id, recipient_id=uid, appointment_id=None, is_read=False
+            ).count()
+            p2p_map[other_id] = {
+                "type": "peer",
+                "other_user": {"id": other.id, "name": other.display_name, "avatar": other.profile_picture} if other else None,
+                "last_message": msg.body[:100],
+                "last_at": msg.created_at.isoformat(),
+                "unread": unread,
+            }
+
+    # Session threads (appointment_id IS NOT NULL)
+    session_raw = Message.query.filter(
+        Message.appointment_id != None,  # noqa: E711
+        (Message.sender_id == uid) | (Message.recipient_id == uid),
+    ).order_by(Message.created_at.desc()).all()
+
+    session_map = {}
+    for msg in session_raw:
+        aid = msg.appointment_id
+        if aid not in session_map:
+            appt = db.session.get(Appointment, aid)
+            other_id = appt.student_id if appt and appt.provider_id == uid else (appt.provider_id if appt else None)
+            other = db.session.get(User, other_id) if other_id else None
+            unread = Message.query.filter_by(appointment_id=aid, recipient_id=uid, is_read=False).count()
+            session_map[aid] = {
+                "type": "session",
+                "appointment_id": aid,
+                "topic": appt.topic if appt else "Session",
+                "other_user": {"id": other.id, "name": other.display_name, "avatar": other.profile_picture} if other else None,
+                "last_message": msg.body[:100],
+                "last_at": msg.created_at.isoformat(),
+                "unread": unread,
+            }
+
+    return jsonify({
+        "ok": True,
+        "peer_threads": list(p2p_map.values()),
+        "session_threads": list(session_map.values()),
+    })
+
+
+@main.route("/api/messages/thread/<int:other_user_id>", methods=["GET"])
+@login_required
+def peer_thread(other_user_id):
+    """Fetch all peer-to-peer messages between current_user and other_user_id."""
+    other = db.session.get(User, other_user_id)
+    if not other or not other.is_active:
+        return error("User not found.", 404)
+
+    uid = current_user.id
+    msgs = Message.query.filter(
+        Message.appointment_id == None,  # noqa: E711
+        ((Message.sender_id == uid) & (Message.recipient_id == other_user_id)) |
+        ((Message.sender_id == other_user_id) & (Message.recipient_id == uid)),
+    ).order_by(Message.created_at.asc()).all()
+
+    # Mark incoming as read
+    for m in msgs:
+        if m.recipient_id == uid and not m.is_read:
+            m.is_read = True
+    db.session.commit()
+
+    return jsonify({
+        "ok": True,
+        "messages": [
+            {
+                "id": m.id,
+                "sender_id": m.sender_id,
+                "body": m.body,
+                "created_at": m.created_at.isoformat(),
+                "is_read": m.is_read,
+            }
+            for m in msgs
+        ],
+        "other_user": {"id": other.id, "name": other.display_name, "avatar": other.profile_picture},
+    })
+
+
+@main.route("/api/messages/session/<int:appointment_id>", methods=["GET"])
+@login_required
+def session_thread(appointment_id):
+    """Fetch messages for a specific booked session thread."""
+    appt = db.session.get(Appointment, appointment_id)
+    if not appt:
+        return error("Session not found.", 404)
+    uid = current_user.id
+    if appt.student_id != uid and appt.provider_id != uid:
+        return error("Access denied.", 403)
+
+    msgs = Message.query.filter_by(appointment_id=appointment_id).order_by(Message.created_at.asc()).all()
+
+    for m in msgs:
+        if m.recipient_id == uid and not m.is_read:
+            m.is_read = True
+    db.session.commit()
+
+    return jsonify({
+        "ok": True,
+        "appointment": {"id": appt.id, "topic": appt.topic, "status": appt.status},
+        "messages": [
+            {
+                "id": m.id,
+                "sender_id": m.sender_id,
+                "body": m.body,
+                "created_at": m.created_at.isoformat(),
+                "is_read": m.is_read,
+            }
+            for m in msgs
+        ],
+    })
+
+
+@main.route("/api/messages/send", methods=["POST"])
+@login_required
+def send_message_api():
+    data = request.get_json(silent=True) or {}
+    recipient_id = data.get("recipient_id")
+    body = (data.get("body") or "").strip()
+    appointment_id = data.get("appointment_id")  # optional
+
+    if not recipient_id:
+        return error("No recipient specified.", field="recipient_id")
+    if not body:
+        return error("Message cannot be empty.", field="body")
+    if len(body) > 3000:
+        return error("Message is too long (max 3000 characters).", field="body")
+    if recipient_id == current_user.id:
+        return error("You cannot message yourself.")
+
+    recipient = db.session.get(User, recipient_id)
+    if not recipient or not recipient.is_active:
+        return error("Recipient not found.", 404)
+
+    # Peer-to-peer: only students can initiate P2P (appointment_id=None)
+    if not appointment_id:
+        if "student" not in current_user.roles and not current_user.is_admin:
+            return error("Only students can send peer-to-peer messages.", 403)
+        if "student" not in recipient.roles and not recipient.is_admin:
+            return error("You can only send peer messages to fellow students.", 403)
+
+    appt = None
+    if appointment_id:
+        appt = db.session.get(Appointment, appointment_id)
+        if not appt:
+            return error("Session not found.", 404)
+        uid = current_user.id
+        if appt.student_id != uid and appt.provider_id != uid:
+            return error("You are not part of this session.", 403)
+
+    try:
+        msg = Message(
+            sender_id=current_user.id,
+            recipient_id=recipient_id,
+            appointment_id=appt.id if appt else None,
+            body=body,
+        )
+        db.session.add(msg)
+        db.session.commit()
+        return jsonify({
+            "ok": True,
+            "message": {
+                "id": msg.id,
+                "sender_id": msg.sender_id,
+                "body": msg.body,
+                "created_at": msg.created_at.isoformat(),
+                "is_read": msg.is_read,
+            },
+        }), 201
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception("Failed to send message")
+        return error("Failed to send message. Please try again.", 500)
+
+
+# ---------- Admin Page Routes ----------
+
+@main.route("/admin")
+@main.route("/admin/dashboard")
+@admin_required
+def admin_dashboard():
+    return render_template("admin/dashboard.html")
+
+
+@main.route("/admin/verification")
+@admin_required
+def admin_verification():
+    return render_template("admin/verification.html")
+
+
+@main.route("/admin/reports")
+@admin_required
+def admin_reports_page():
+    return render_template("admin/reports.html")
+
+
+@main.route("/admin/users")
+@admin_required
+def admin_users():
+    return render_template("admin/users.html")
+
+
+@main.route("/admin/settings")
+@admin_required
+def admin_settings():
+    return render_template("admin/settings.html")
+
+
+# ---------- Replace stub messages route ----------
+# (Delete or comment out the old /messages route and use this one)
+
 @main.route("/messages")
 @login_required
-def messages():
+def messages_page():
     return render_template("messages.html")
+
+# Peer user search — returns students the current user can start a P2P chat with
+@main.route("/api/messages/peer-users", methods=["GET"])
+@login_required
+def peer_user_search():
+    q = (request.args.get("q") or "").strip().lower()
+    if not q or len(q) < 2:
+        return jsonify({"ok": True, "users": []})
+    all_users = User.query.filter_by(is_active=True).all()
+    results = []
+    for u in all_users:
+        if u.id == current_user.id:
+            continue
+        if "student" not in u.roles:
+            continue
+        if q in u.display_name.lower() or q in u.email.lower():
+            results.append({
+                "id": u.id,
+                "name": u.display_name,
+                "avatar": u.profile_picture,
+            })
+        if len(results) >= 10:
+            break
+    return jsonify({"ok": True, "users": results})
