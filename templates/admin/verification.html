@@ -190,42 +190,87 @@ async function getCsrfToken() {
       const card = document.createElement('div');
       card.className = 'app-card';
       card.id = 'app-' + app.id;
-
-      const avatarContent = `<div class="app-avatar">${app.user.name[0].toUpperCase()}</div>`;
-      const roleClass = app.role === 'coach' ? 'coach' : '';
-      const linksHtml = app.links.map(l =>
-        `<a class="app-link" href="${l}" target="_blank" rel="noopener">🔗 ${l.replace(/^https?:\/\//, '')}</a>`
-      ).join('');
-      const credsHtml = app.credentials.map(c =>
-        `<a class="cred-btn" href="${c.url}" target="_blank">📄 ${c.name}</a>`
-      ).join('');
-      const statusHtml = isPending ? '' :
-        `<span class="status-pill ${app.status}">${app.status.charAt(0).toUpperCase() + app.status.slice(1)}</span>`;
-      const actionsHtml = isPending ? `
-        <button class="btn-approve" onclick="approve(${app.id}, this)">✅ Approve</button>
-        <button class="btn-reject"  onclick="toggleReject(${app.id})">❌ Reject</button>
-        <div class="reject-wrap" id="rw-${app.id}">
-          <textarea class="reject-input" id="reason-${app.id}" placeholder="Reason for rejection (optional)…"></textarea>
-          <button class="reject-submit" onclick="reject(${app.id}, this)">Confirm Rejection</button>
-        </div>` : statusHtml;
-
+      const userName = String(app.user?.name || 'Unknown');
+      const appId = Number(app.id);
       card.innerHTML = `
-        <div class="app-card-top">
-          ${avatarContent}
-          <div class="app-info">
-            <div class="app-name">${app.user.name}</div>
-            <div class="app-email">${app.user.email}</div>
-            <div class="app-meta">
-              <span class="app-role-badge ${roleClass}">Applied as: ${roleLabel(app.role)}</span>
-              <span class="app-date">Submitted ${fmt(app.submitted_at)}</span>
-            </div>
+        <div class="app-card-top"><div class="app-avatar"></div>
+          <div class="app-info"><div class="app-name"></div><div class="app-email"></div>
+            <div class="app-meta"><span class="app-role-badge"></span><span class="app-date"></span></div>
           </div>
         </div>
-        ${app.bio ? `<div class="app-bio">${app.bio}</div>` : ''}
-        ${linksHtml ? `<div class="app-links">${linksHtml}</div>` : ''}
-        ${credsHtml ? `<div><div style="color:var(--txt3);font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">Credentials</div><div class="app-creds">${credsHtml}</div></div>` : ''}
-        <div class="app-actions">${actionsHtml}</div>
-      `;
+        <div class="app-bio"></div><div class="app-links"></div>
+        <div class="app-credentials"><div style="color:var(--txt3);font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">Credentials</div><div class="app-creds"></div></div>
+        <div class="app-actions"></div>`;
+
+      const setText = (selector, value) => { card.querySelector(selector).textContent = value; };
+      setText('.app-avatar', userName.slice(0, 1).toUpperCase());
+      setText('.app-name', userName);
+      setText('.app-email', app.user?.email || '');
+      const roleBadge = card.querySelector('.app-role-badge');
+      roleBadge.textContent = 'Applied as: ' + (app.role === 'mentor' ? 'Teacher' : 'Coach');
+      if (app.role === 'coach') roleBadge.classList.add('coach');
+      setText('.app-date', 'Submitted ' + fmt(app.submitted_at));
+
+      const bio = card.querySelector('.app-bio');
+      bio.textContent = app.bio || '';
+      bio.hidden = !app.bio;
+
+      const links = card.querySelector('.app-links');
+      (Array.isArray(app.links) ? app.links : []).forEach(value => {
+        let linkUrl;
+        try { linkUrl = new URL(value); } catch (_) { return; }
+        if (!['http:', 'https:'].includes(linkUrl.protocol)) return;
+        const link = document.createElement('a');
+        link.className = 'app-link';
+        link.href = linkUrl.href;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = '🔗 ' + value.replace(/^https?:\/\//i, '');
+        links.appendChild(link);
+      });
+      links.hidden = !links.childElementCount;
+
+      const credentials = card.querySelector('.app-creds');
+      (Array.isArray(app.credentials) ? app.credentials : []).forEach(credential => {
+        const link = document.createElement('a');
+        link.className = 'cred-btn';
+        link.href = credential.url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = '📄 ' + (credential.name || 'Credential');
+        credentials.appendChild(link);
+      });
+      card.querySelector('.app-credentials').hidden = !credentials.childElementCount;
+
+      const actions = card.querySelector('.app-actions');
+      if (isPending && Number.isSafeInteger(appId)) {
+        const approveButton = document.createElement('button');
+        approveButton.className = 'btn-approve';
+        approveButton.textContent = '✅ Approve';
+        approveButton.addEventListener('click', () => approve(appId, approveButton));
+        const rejectButton = document.createElement('button');
+        rejectButton.className = 'btn-reject';
+        rejectButton.textContent = '❌ Reject';
+        rejectButton.addEventListener('click', () => toggleReject(appId));
+        const rejectWrap = document.createElement('div');
+        rejectWrap.className = 'reject-wrap';
+        rejectWrap.id = 'rw-' + appId;
+        const reason = document.createElement('textarea');
+        reason.className = 'reject-input';
+        reason.id = 'reason-' + appId;
+        reason.placeholder = 'Reason for rejection (optional)…';
+        const confirm = document.createElement('button');
+        confirm.className = 'reject-submit';
+        confirm.textContent = 'Confirm Rejection';
+        confirm.addEventListener('click', () => reject(appId, confirm));
+        rejectWrap.append(reason, confirm);
+        actions.append(approveButton, rejectButton, rejectWrap);
+      } else {
+        const status = document.createElement('span');
+        status.className = 'status-pill ' + (['approved', 'rejected'].includes(app.status) ? app.status : '');
+        status.textContent = ['approved', 'rejected'].includes(app.status) ? app.status[0].toUpperCase() + app.status.slice(1) : 'Unknown';
+        actions.appendChild(status);
+      }
       list.appendChild(card);
     }
 
@@ -239,6 +284,7 @@ async function getCsrfToken() {
   btn.textContent = 'Approving…';
 
   try {
+    await getCsrfToken();
     const res = await fetch('/api/admin/applications/' + id + '/approve', {
       method: 'POST',
       credentials: 'same-origin',
@@ -273,6 +319,7 @@ async function getCsrfToken() {
   const reason = document.getElementById('reason-' + id).value;
 
   try {
+    await getCsrfToken();
     const res = await fetch('/api/admin/applications/' + id + '/reject', {
       method: 'POST',
       credentials: 'same-origin',
@@ -307,18 +354,6 @@ async function getCsrfToken() {
         currentStatus = this.dataset.status;
         loadApps(currentStatus);
       });
-    });
-
-    // Dropdown
-    document.getElementById('userAvatar').addEventListener('click', function() {
-      document.getElementById('profileDropdown').classList.toggle('hidden');
-    });
-    document.addEventListener('click', function(e) {
-      if (!document.getElementById('profileMenu').contains(e.target))
-        document.getElementById('profileDropdown').classList.add('hidden');
-    });
-    document.getElementById('logoutBtn').addEventListener('click', function() {
-      fetch('/api/auth/logout', { method:'POST', credentials:'same-origin' }).then(() => location.href = '/auth');
     });
 
     async function initializeVerificationPage() {

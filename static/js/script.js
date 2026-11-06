@@ -227,7 +227,7 @@ window.L2 = { user, getMode: () => activeMode, setMode };
                 const tokenResponse = await fetch("/api/csrf-token", { credentials: "same-origin" });
                 const tokenData = await tokenResponse.json();
 
-                await fetch("/api/auth/logout", {
+                const logoutResponse = await fetch("/api/auth/logout", {
                     method: "POST",
                     credentials: "same-origin",
                     headers: {
@@ -236,11 +236,15 @@ window.L2 = { user, getMode: () => activeMode, setMode };
                     }
                 });
 
+                if (!logoutResponse.ok) {
+                    throw new Error("Logout request was rejected.");
+                }
+
                 store.remove(KEYS.user);
                 store.remove(KEYS.mode);
                 window.location.href = "/auth";
             } catch (error) {
-                window.location.href = "/auth";
+                window.alert("Logout could not be completed. Please try again.");
             }
         });
     }

@@ -480,7 +480,7 @@ function updateBioCount() {
                 const tokenResp = await fetch("/api/csrf-token", { credentials: "same-origin" });
                 const tokenData = await tokenResp.json();
 
-                await fetch("/api/auth/logout", {
+                const logoutResponse = await fetch("/api/auth/logout", {
                     method: "POST",
                     credentials: "same-origin",
                     headers: {
@@ -488,9 +488,10 @@ function updateBioCount() {
                         Accept: "application/json"
                     }
                 });
+                if (!logoutResponse.ok) throw new Error("Logout request was rejected.");
                 window.location.href = "/auth";
             } catch (error) {
-                window.location.href = "/auth";
+                window.alert("Logout could not be completed. Please try again.");
             }
         });
     }

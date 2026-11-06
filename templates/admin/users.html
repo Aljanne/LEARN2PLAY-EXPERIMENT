@@ -146,55 +146,123 @@
       setTimeout(() => { toast.className = 'toast'; }, 3500);
     }
 
-    function rolePillsHtml(user) {
-      let pills = user.roles.map(r => `<span class="role-pill ${r}">${r === 'mentor' ? 'Teacher' : r.charAt(0).toUpperCase() + r.slice(1)}</span>`).join('');
-      if (user.is_admin) pills += `<span class="role-pill admin">Admin</span>`;
-      if (user.pending_roles.length) pills += user.pending_roles.map(r =>
-        `<span class="role-pill pending">Pending: ${r === 'mentor' ? 'Teacher' : r}</span>`).join('');
-      return pills;
+    async function getCsrfToken() {
+      const res = await fetch('/api/csrf-token', { credentials: 'same-origin' });
+      const data = await res.json();
+      if (!res.ok || !data.csrf_token) throw new Error('Unable to retrieve CSRF token.');
+      return data.csrf_token;
+    }
+
+    function renderRolePills(container, user) {
+      const allowedRoles = { student: 'Student', mentor: 'Teacher', coach: 'Coach' };
+      (Array.isArray(user.roles) ? user.roles : []).forEach(role => {
+        if (!Object.hasOwn(allowedRoles, role)) return;
+        const pill = document.createElement('span');
+        pill.className = 'role-pill ' + role;
+        pill.textContent = allowedRoles[role];
+        container.appendChild(pill);
+      });
+      if (user.is_admin) {
+        const pill = document.createElement('span');
+        pill.className = 'role-pill admin';
+        pill.textContent = 'Admin';
+        container.appendChild(pill);
+      }
+      (Array.isArray(user.pending_roles) ? user.pending_roles : []).forEach(role => {
+        if (!Object.hasOwn(allowedRoles, role)) return;
+        const pill = document.createElement('span');
+        pill.className = 'role-pill pending';
+        pill.textContent = 'Pending: ' + allowedRoles[role];
+        container.appendChild(pill);
+      });
     }
 
     function renderUsers(users) {
       if (!users.length) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--txt3);padding:40px;">No users found.</td></tr>';
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 4;
+        cell.style.cssText = 'text-align:center;color:var(--txt3);padding:40px;';
+        cell.textContent = 'No users found.';
+        row.appendChild(cell);
+        tbody.replaceChildren(row);
         return;
       }
-      tbody.innerHTML = '';
+      tbody.replaceChildren();
       users.forEach(u => {
         const tr = document.createElement('tr');
-        const isSelf = u.id === myId;
-        const avatarContent = u.profile_picture
-          ? `<img src="${u.profile_picture}" alt="">`
-          : u.name[0].toUpperCase();
-        tr.innerHTML = `
-          <td>
-            <div class="user-avatar-cell">
-              <div class="u-avatar">${avatarContent}</div>
-              <div>
-                <div class="u-name">${u.name}${isSelf ? ' <span style="color:var(--txt3);font-size:11px;">(you)</span>' : ''}</div>
-                <div class="u-email">${u.email}</div>
-              </div>
-            </div>
-          </td>
-          <td><div class="role-pills">${rolePillsHtml(u)}</div></td>
-          <td>
-            <span class="status-dot ${u.is_active ? 'active' : 'inactive'}"></span>
-            <span style="color:var(--txt2);font-size:13px;margin-left:6px;">${u.is_active ? 'Active' : 'Inactive'}</span>
-          </td>
-          <td>
-            <div class="user-actions">
-              ${!isSelf ? `
-                <button class="ua-btn ${u.is_active ? 'deactivate' : 'activate'}"
-                  onclick="toggleActive(${u.id}, this)">
-                  ${u.is_active ? 'Deactivate' : 'Activate'}
-                </button>
-                <button class="ua-btn" onclick="toggleAdmin(${u.id}, ${u.is_admin}, this)">
-                  ${u.is_admin ? 'Remove Admin' : 'Make Admin'}
-                </button>
-              ` : '<span style="color:var(--txt3);font-size:12px;">—</span>'}
-            </div>
-          </td>
-        `;
+        const userName = String(u.name || 'Unknown');
+        const userId = Number(u.id);
+        const isSelf = userId === myId;
+        const cells = Array.from({ length: 4 }, () => document.createElement('td'));
+        cells.forEach(cell => tr.appendChild(cell));
+
+        const userCell = document.createElement('div');
+        userCell.className = 'user-avatar-cell';
+        const avatar = document.createElement('div');
+        avatar.className = 'u-avatar';
+        let avatarUrl;
+        try {
+          avatarUrl = typeof u.profile_picture === 'string' && u.profile_picture.trim()
+            ? new URL(u.profile_picture, window.location.origin)
+            : null;
+        } catch (_) { avatarUrl = null; }
+        if (avatarUrl && ['http:', 'https:'].includes(avatarUrl.protocol) && avatarUrl.origin === window.location.origin) {
+          const image = document.createElement('img');
+          image.src = avatarUrl.href;
+          image.alt = '';
+          avatar.appendChild(image);
+        } else {
+          avatar.textContent = userName.slice(0, 1).toUpperCase();
+        }
+        const identity = document.createElement('div');
+        const name = document.createElement('div');
+        name.className = 'u-name';
+        name.textContent = userName;
+        if (isSelf) {
+          const selfLabel = document.createElement('span');
+          selfLabel.style.cssText = 'color:var(--txt3);font-size:11px;';
+          selfLabel.textContent = ' (you)';
+          name.appendChild(selfLabel);
+        }
+        const email = document.createElement('div');
+        email.className = 'u-email';
+        email.textContent = u.email || '';
+        identity.append(name, email);
+        userCell.append(avatar, identity);
+        cells[0].appendChild(userCell);
+
+        const roles = document.createElement('div');
+        roles.className = 'role-pills';
+        renderRolePills(roles, u);
+        cells[1].appendChild(roles);
+
+        const statusDot = document.createElement('span');
+        statusDot.className = 'status-dot ' + (u.is_active ? 'active' : 'inactive');
+        const statusText = document.createElement('span');
+        statusText.style.cssText = 'color:var(--txt2);font-size:13px;margin-left:6px;';
+        statusText.textContent = u.is_active ? 'Active' : 'Inactive';
+        cells[2].append(statusDot, statusText);
+
+        const actions = document.createElement('div');
+        actions.className = 'user-actions';
+        if (!isSelf && Number.isSafeInteger(userId)) {
+          const activeButton = document.createElement('button');
+          activeButton.className = 'ua-btn ' + (u.is_active ? 'deactivate' : 'activate');
+          activeButton.textContent = u.is_active ? 'Deactivate' : 'Activate';
+          activeButton.addEventListener('click', () => toggleActive(userId, activeButton));
+          const adminButton = document.createElement('button');
+          adminButton.className = 'ua-btn';
+          adminButton.textContent = u.is_admin ? 'Remove Admin' : 'Make Admin';
+          adminButton.addEventListener('click', () => toggleAdmin(userId, Boolean(u.is_admin), adminButton));
+          actions.append(activeButton, adminButton);
+        } else {
+          const dash = document.createElement('span');
+          dash.style.cssText = 'color:var(--txt3);font-size:12px;';
+          dash.textContent = '—';
+          actions.appendChild(dash);
+        }
+        cells[3].appendChild(actions);
         tbody.appendChild(tr);
       });
     }
@@ -210,25 +278,37 @@
 
     async function toggleActive(id, btn) {
       btn.disabled = true;
-      const res = await fetch('/api/admin/users/' + id + '/toggle-active', {
-        method: 'POST', credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' }, body: '{}'
-      });
-      const data = await res.json();
-      if (data.ok) { showToast(data.message, 'ok'); loadUsers(); }
-      else { showToast(data.message || 'Error.', 'err'); btn.disabled = false; }
+      try {
+        const token = await getCsrfToken();
+        const res = await fetch('/api/admin/users/' + id + '/toggle-active', {
+          method: 'POST', credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': token }, body: '{}'
+        });
+        const data = await res.json();
+        if (data.ok) { showToast(data.message, 'ok'); loadUsers(); }
+        else { showToast(data.message || 'Error.', 'err'); btn.disabled = false; }
+      } catch (_) {
+        showToast('Could not update account status. Please try again.', 'err');
+        btn.disabled = false;
+      }
     }
 
     async function toggleAdmin(id, isAdmin, btn) {
       btn.disabled = true;
-      const res = await fetch('/api/admin/users/' + id + '/set-admin', {
-        method: 'POST', credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ is_admin: !isAdmin })
-      });
-      const data = await res.json();
-      if (data.ok) { showToast(data.message, 'ok'); loadUsers(); }
-      else { showToast(data.message || 'Error.', 'err'); btn.disabled = false; }
+      try {
+        const token = await getCsrfToken();
+        const res = await fetch('/api/admin/users/' + id + '/set-admin', {
+          method: 'POST', credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': token },
+          body: JSON.stringify({ is_admin: !isAdmin })
+        });
+        const data = await res.json();
+        if (data.ok) { showToast(data.message, 'ok'); loadUsers(); }
+        else { showToast(data.message || 'Error.', 'err'); btn.disabled = false; }
+      } catch (_) {
+        showToast('Could not update administrator access. Please try again.', 'err');
+        btn.disabled = false;
+      }
     }
 
     searchInput.addEventListener('input', function() {
@@ -238,15 +318,6 @@
       );
       renderUsers(filtered);
     });
-
-    document.getElementById('userAvatar').addEventListener('click', () =>
-      document.getElementById('profileDropdown').classList.toggle('hidden'));
-    document.addEventListener('click', e => {
-      if (!document.getElementById('profileMenu').contains(e.target))
-        document.getElementById('profileDropdown').classList.add('hidden');
-    });
-    document.getElementById('logoutBtn').addEventListener('click', () =>
-      fetch('/api/auth/logout', { method:'POST', credentials:'same-origin' }).then(() => location.href = '/auth'));
 
     loadUsers();
   </script>

@@ -145,49 +145,81 @@
       data.reports.forEach(r => renderReport(r));
     }
 
+    async function getCsrfToken() {
+      const res = await fetch('/api/csrf-token', { credentials: 'same-origin' });
+      const data = await res.json();
+      if (!res.ok || !data.csrf_token) throw new Error('Unable to retrieve CSRF token.');
+      return data.csrf_token;
+    }
+
     function renderReport(r) {
       const card = document.createElement('div');
-      card.className = 'report-card ' + r.status;
+      const statusValue = ['open', 'reviewed', 'dismissed'].includes(r.status) ? r.status : 'open';
+      card.className = 'report-card ' + statusValue;
       card.id = 'rpt-' + r.id;
-
-      const isOpen = r.status === 'open';
-      const noteHtml = r.admin_note
-        ? `<div class="admin-note-display"><strong>Admin note</strong>${r.admin_note}</div>` : '';
-      const actionsHtml = isOpen ? `
-        <div class="report-actions">
-          <button class="btn-mark" onclick="toggleNote(${r.id}, 'reviewed')">✅ Mark Reviewed</button>
-          <button class="btn-mark dismiss" onclick="toggleNote(${r.id}, 'dismissed')">🚫 Dismiss</button>
-        </div>
-        <div class="admin-note-wrap" id="nw-${r.id}">
-          <textarea class="note-input" id="note-${r.id}" placeholder="Add a note (optional)…"></textarea>
-          <button class="note-submit" id="nsub-${r.id}">Confirm</button>
-        </div>` : '';
 
       card.innerHTML = `
         <div class="report-header">
           <div>
-            <div class="report-title">🚩 ${r.reason}</div>
-            <span class="report-status-badge ${r.status}">${r.status.charAt(0).toUpperCase() + r.status.slice(1)}</span>
+            <div class="report-title"></div>
+            <span class="report-status-badge"></span>
           </div>
-          <div class="report-date">${fmt(r.created_at)}</div>
+          <div class="report-date"></div>
         </div>
         <div class="report-parties">
           <div class="party">
             <span class="party-label">Reporter</span>
-            <div class="party-name">${r.reporter ? r.reporter.name : 'Unknown'}</div>
-            <div class="party-email">${r.reporter ? r.reporter.email : ''}</div>
+            <div class="party-name reporter-name"></div>
+            <div class="party-email reporter-email"></div>
           </div>
           <div class="party">
             <span class="party-label">Reported User</span>
-            <div class="party-name">${r.reported ? r.reported.name : 'Unknown'}</div>
-            <div class="party-email">${r.reported ? r.reported.email : ''}</div>
+            <div class="party-name reported-name"></div>
+            <div class="party-email reported-email"></div>
           </div>
-          ${r.appointment_id ? `<div class="party"><span class="party-label">Session ID</span><div class="party-name">#${r.appointment_id}</div></div>` : ''}
         </div>
-        ${r.details ? `<div class="report-details">${r.details}</div>` : ''}
-        ${noteHtml}
-        ${actionsHtml}
+        <div class="report-details"></div>
+        <div class="admin-note-display"><strong>Admin note</strong><span></span></div>
+        <div class="report-actions"></div>
+        <div class="admin-note-wrap"><textarea class="note-input" placeholder="Add a note (optional)…"></textarea><button class="note-submit">Confirm</button></div>
       `;
+      card.querySelector('.report-title').textContent = '🚩 ' + (r.reason || 'Report');
+      const badge = card.querySelector('.report-status-badge');
+      badge.classList.add(statusValue);
+      badge.textContent = statusValue[0].toUpperCase() + statusValue.slice(1);
+      card.querySelector('.report-date').textContent = fmt(r.created_at);
+      card.querySelector('.reporter-name').textContent = r.reporter?.name || 'Unknown';
+      card.querySelector('.reporter-email').textContent = r.reporter?.email || '';
+      card.querySelector('.reported-name').textContent = r.reported?.name || 'Unknown';
+      card.querySelector('.reported-email').textContent = r.reported?.email || '';
+      const details = card.querySelector('.report-details');
+      details.textContent = r.details || '';
+      details.hidden = !r.details;
+      const note = card.querySelector('.admin-note-display');
+      note.querySelector('span').textContent = r.admin_note || '';
+      note.hidden = !r.admin_note;
+      const actions = card.querySelector('.report-actions');
+      const noteWrap = card.querySelector('.admin-note-wrap');
+      if (statusValue === 'open') {
+        const review = document.createElement('button');
+        review.className = 'btn-mark';
+        review.textContent = '✅ Mark Reviewed';
+        review.addEventListener('click', () => toggleNote(r.id, 'reviewed'));
+        const dismiss = document.createElement('button');
+        dismiss.className = 'btn-mark dismiss';
+        dismiss.textContent = '🚫 Dismiss';
+        dismiss.addEventListener('click', () => toggleNote(r.id, 'dismissed'));
+        actions.append(review, dismiss);
+        const id = Number(r.id);
+        noteWrap.id = 'nw-' + id;
+        noteWrap.querySelector('.note-input').id = 'note-' + id;
+        const confirm = noteWrap.querySelector('.note-submit');
+        confirm.id = 'nsub-' + id;
+        noteWrap.hidden = true;
+      } else {
+        actions.hidden = true;
+        noteWrap.hidden = true;
+      }
       reportList.appendChild(card);
     }
 
@@ -195,15 +227,18 @@
     function toggleNote(id, action) {
       const nw = document.getElementById('nw-' + id);
       pendingAction[id] = action;
+      nw.hidden = false;
       nw.classList.toggle('open');
+      if (!nw.classList.contains('open')) nw.hidden = true;
       document.getElementById('nsub-' + id).onclick = () => submitAction(id, action);
     }
 
     async function submitAction(id, action) {
       const note = document.getElementById('note-' + id).value;
+      const token = await getCsrfToken();
       const res = await fetch('/api/admin/reports/' + id + '/' + action, {
         method: 'POST', credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': token },
         body: JSON.stringify({ note })
       });
       const data = await res.json();
@@ -222,15 +257,6 @@
         loadReports(this.dataset.status);
       });
     });
-
-    document.getElementById('userAvatar').addEventListener('click', () =>
-      document.getElementById('profileDropdown').classList.toggle('hidden'));
-    document.addEventListener('click', e => {
-      if (!document.getElementById('profileMenu').contains(e.target))
-        document.getElementById('profileDropdown').classList.add('hidden');
-    });
-    document.getElementById('logoutBtn').addEventListener('click', () =>
-      fetch('/api/auth/logout', { method:'POST', credentials:'same-origin' }).then(() => location.href = '/auth'));
 
     loadReports('open');
   </script>

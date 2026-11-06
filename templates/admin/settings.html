@@ -179,14 +179,6 @@
 
   <script src="{{ url_for('static', filename='js/script.js') }}" defer></script>
   <script>
-    document.getElementById('userAvatar').addEventListener('click', () =>
-      document.getElementById('profileDropdown').classList.toggle('hidden'));
-    document.addEventListener('click', e => {
-      if (!document.getElementById('profileMenu').contains(e.target))
-        document.getElementById('profileDropdown').classList.add('hidden');
-    });
-    document.getElementById('logoutBtn').addEventListener('click', () =>
-      fetch('/api/auth/logout', { method:'POST', credentials:'same-origin' }).then(() => location.href = '/auth'));
   </script>
 </body>
 </html>

@@ -389,6 +389,13 @@
     let reportTargetId = null;
     let pollInterval = null;
 
+    async function getCsrfToken() {
+      const res = await fetch('/api/csrf-token', { credentials: 'same-origin' });
+      const data = await res.json();
+      if (!res.ok || !data.csrf_token) throw new Error('Unable to retrieve CSRF token.');
+      return data.csrf_token;
+    }
+
     // ---- Toasts ----
     function showToast(msg, type = 'ok') {
       toast.textContent = msg;
@@ -585,9 +592,10 @@
         payload.appointment_id = currentThread.appointment_id;
       }
 
+      const csrfToken = await getCsrfToken();
       const res = await fetch('/api/messages/send', {
         method: 'POST', credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
         body: JSON.stringify(payload)
       });
       const data = await res.json();
@@ -629,9 +637,10 @@
       if (currentThread && currentThread.type === 'session')
         payload.appointment_id = currentThread.appointment_id;
 
+      const csrfToken = await getCsrfToken();
       const res = await fetch('/api/reports', {
         method: 'POST', credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
         body: JSON.stringify(payload)
       });
       const data = await res.json();
@@ -707,16 +716,6 @@
         renderThreadList();
       });
     });
-
-    // ---- Navbar dropdown ----
-    document.getElementById('userAvatar').addEventListener('click', () =>
-      document.getElementById('profileDropdown').classList.toggle('hidden'));
-    document.addEventListener('click', e => {
-      if (!document.getElementById('profileMenu').contains(e.target))
-        document.getElementById('profileDropdown').classList.add('hidden');
-    });
-    document.getElementById('logoutBtn').addEventListener('click', () =>
-      fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).then(() => location.href = '/auth'));
 
     // ---- Helpers ----
     function escHtml(str) {

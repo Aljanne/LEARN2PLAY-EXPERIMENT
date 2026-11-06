@@ -265,15 +265,19 @@
     if (logoutBtn) {
       logoutBtn.addEventListener("click", async () => {
         try {
-          const resp = await fetch("/api/csrf-token");
+          const resp = await fetch("/api/csrf-token", { credentials: "same-origin" });
           const data = await resp.json();
-          await fetch("/api/auth/logout", {
+          const logoutResponse = await fetch("/api/auth/logout", {
             method: "POST",
+            credentials: "same-origin",
             headers: { "X-CSRFToken": data.csrf_token }
           });
+          if (!resp.ok || !data.csrf_token || !logoutResponse.ok) {
+            throw new Error("Logout request was rejected.");
+          }
           window.location.href = "/auth";
         } catch (_) {
-          window.location.href = "/auth";
+          window.alert("Logout could not be completed. Please try again.");
         }
       });
     }
