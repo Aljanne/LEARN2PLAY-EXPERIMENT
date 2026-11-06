@@ -21,6 +21,9 @@
         <a href="{{ url_for('main.schedule') }}">Schedule</a>
       {% endif %}
       <a href="{{ url_for('main.sessions') }}">My Sessions</a>
+      {% if current_user.is_authenticated and not current_user.is_admin %}
+        <a href="{{ url_for('main.messages_page') }}">Messages</a>
+      {% endif %}
       <a href="{{ url_for('main.profile') }}">Profile</a>
       <a href="{{ url_for('main.settings') }}">Settings</a>
       <a href="{{ url_for('main.help') }}">Help</a>

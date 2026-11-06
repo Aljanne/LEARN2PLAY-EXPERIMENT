@@ -291,6 +291,8 @@
 </head>
 <body class="dashboard">
 
+  {% set can_peer_chat = current_user.is_admin or ('student' in current_user.roles and 'mentor' not in current_user.roles and 'coach' not in current_user.roles) %}
+
   <!-- ===== Top Navbar ===== -->
 
   {% set active_page = 'messages' %}
@@ -308,19 +310,23 @@
 
       <!-- Tabs: Peer / Sessions -->
       <div class="chat-tabs">
+        {% if can_peer_chat %}
         <button class="chat-tab active" id="tabPeer" data-tab="peer">
           Peer Chat <span class="tab-badge hidden" id="peerBadge"></span>
         </button>
-        <button class="chat-tab" id="tabSession" data-tab="session">
+        {% endif %}
+        <button class="chat-tab{% if not can_peer_chat %} active{% endif %}" id="tabSession" data-tab="session">
           Sessions <span class="tab-badge hidden" id="sessionBadge"></span>
         </button>
       </div>
 
       <!-- New peer chat button (only on Peer tab) -->
+      {% if can_peer_chat %}
       <button class="new-chat-btn" id="newChatBtn">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
         New conversation
       </button>
+      {% endif %}
 
       <div class="thread-list" id="threadList">
         <div class="thread-empty"><div class="ei">💬</div>No conversations yet.</div>
@@ -333,12 +339,13 @@
       <div class="chat-welcome" id="chatWelcome">
         <div class="wi">💬</div>
         <h3>Your Messages</h3>
-        <p>Select a conversation from the left, or start a new peer chat with a fellow student.</p>
+        <p>{% if can_peer_chat %}Select a conversation from the left, or start a new peer chat with a fellow student.{% else %}Select a session conversation from the left to view your messages.{% endif %}</p>
       </div>
     </div>
   </div>
 
   <!-- ===== New Chat Modal ===== -->
+  {% if can_peer_chat %}
   <div class="modal-overlay hidden" id="newChatModal">
     <div class="modal">
       <h3>Start a conversation</h3>
@@ -351,6 +358,7 @@
       <button class="modal-close" id="closeNewChat">Cancel</button>
     </div>
   </div>
+  {% endif %}
 
   <!-- ===== Report Modal ===== -->
   <div class="modal-overlay hidden report-modal" id="reportModal">
@@ -375,6 +383,7 @@
   <script>
     const ME = {{ current_user.id }};
     const MY_NAME = {{ current_user.display_name | tojson }};
+    const CAN_PEER_CHAT = {{ can_peer_chat | tojson }};
 
     const toast = document.getElementById('toast');
     const chatWindow = document.getElementById('chatWindow');
@@ -383,7 +392,7 @@
     const peerBadge = document.getElementById('peerBadge');
     const sessionBadge = document.getElementById('sessionBadge');
 
-    let currentTab = 'peer';
+    let currentTab = CAN_PEER_CHAT ? 'peer' : 'session';
     let currentThread = null; // { type, other_user, appointment_id }
     let allThreads = { peer: [], session: [] };
     let reportTargetId = null;
@@ -428,13 +437,15 @@
       const res = await fetch('/api/messages/threads', { credentials: 'same-origin' });
       const data = await res.json();
       if (!data.ok) return;
-      allThreads.peer = data.peer_threads;
+      allThreads.peer = CAN_PEER_CHAT ? data.peer_threads : [];
       allThreads.session = data.session_threads;
 
       const peerUnread = allThreads.peer.reduce((s, t) => s + (t.unread || 0), 0);
       const sessUnread = allThreads.session.reduce((s, t) => s + (t.unread || 0), 0);
-      peerBadge.textContent = peerUnread;
-      peerBadge.classList.toggle('hidden', peerUnread === 0);
+      if (peerBadge) {
+        peerBadge.textContent = peerUnread;
+        peerBadge.classList.toggle('hidden', peerUnread === 0);
+      }
       sessionBadge.textContent = sessUnread;
       sessionBadge.classList.toggle('hidden', sessUnread === 0);
 
@@ -443,7 +454,8 @@
 
     function renderThreadList() {
       const threads = currentTab === 'peer' ? allThreads.peer : allThreads.session;
-      document.getElementById('newChatBtn').style.display = currentTab === 'peer' ? '' : 'none';
+      const newChatButton = document.getElementById('newChatBtn');
+      if (newChatButton) newChatButton.style.display = CAN_PEER_CHAT && currentTab === 'peer' ? '' : 'none';
 
       if (!threads.length) {
         threadList.innerHTML = `<div class="thread-empty"><div class="ei">${currentTab === 'peer' ? '💬' : '📅'}</div>${currentTab === 'peer' ? 'No peer conversations yet. Start one!' : 'No session chats yet. Book a session first!'}</div>`;
@@ -478,6 +490,7 @@
 
     // ---- Open a thread ----
     async function openThread(thread) {
+      if (thread.type === 'peer' && !CAN_PEER_CHAT) return;
       currentThread = thread;
       renderThreadList(); // update active state
 
@@ -653,23 +666,24 @@
       document.getElementById('reportModal').classList.add('hidden'));
 
     // ---- New chat modal ----
-    document.getElementById('newChatBtn').addEventListener('click', () =>
-      document.getElementById('newChatModal').classList.remove('hidden'));
-    document.getElementById('closeNewChat').addEventListener('click', () => {
-      document.getElementById('newChatModal').classList.add('hidden');
-      document.getElementById('userSearchInput').value = '';
-      document.getElementById('userSearchResults').innerHTML = '<div style="color:var(--txt3);font-size:13px;padding:12px 0;">Type to search…</div>';
-    });
-
-    let searchTimeout;
-    document.getElementById('userSearchInput').addEventListener('input', function() {
-      clearTimeout(searchTimeout);
-      const q = this.value.trim().toLowerCase();
-      if (!q) {
+    if (CAN_PEER_CHAT) {
+      document.getElementById('newChatBtn').addEventListener('click', () =>
+        document.getElementById('newChatModal').classList.remove('hidden'));
+      document.getElementById('closeNewChat').addEventListener('click', () => {
+        document.getElementById('newChatModal').classList.add('hidden');
+        document.getElementById('userSearchInput').value = '';
         document.getElementById('userSearchResults').innerHTML = '<div style="color:var(--txt3);font-size:13px;padding:12px 0;">Type to search…</div>';
-        return;
-      }
-      searchTimeout = setTimeout(async () => {
+      });
+
+      let searchTimeout;
+      document.getElementById('userSearchInput').addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        const q = this.value.trim().toLowerCase();
+        if (!q) {
+          document.getElementById('userSearchResults').innerHTML = '<div style="color:var(--txt3);font-size:13px;padding:12px 0;">Type to search…</div>';
+          return;
+        }
+        searchTimeout = setTimeout(async () => {
         // Search from the tutors endpoint (students only on p2p)
         // We use /api/admin/users... but that's admin only.
         // Instead, we'll search all users from /api/tutors and also check student role.
@@ -700,8 +714,9 @@
           });
           container.appendChild(item);
         });
-      }, 300);
-    });
+        }, 300);
+      });
+    }
 
     // ---- Tabs ----
     document.querySelectorAll('.chat-tab').forEach(btn => {

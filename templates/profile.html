@@ -254,6 +254,7 @@
                             <small>View booked lessons</small>
                         </div>
                     </a>
+                    {% if current_user.is_admin or ('mentor' not in current_user.roles and 'coach' not in current_user.roles) %}
                     <a href="{{ url_for('main.dashboard') }}" class="quick-link">
                         <span class="ql-icon">🔍</span>
                         <div>
@@ -261,6 +262,7 @@
                             <small>Find verified teachers &amp; coaches</small>
                         </div>
                     </a>
+                    {% endif %}
                 </div>
             </div>
 

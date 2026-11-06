@@ -13,7 +13,6 @@
     <a href="{{ url_for('main.admin_reports_page') }}" {% if active_page == 'reports' %}class="active"{% endif %}>Reports</a>
     <a href="{{ url_for('main.admin_users') }}"      {% if active_page == 'users' %}class="active"{% endif %}>Users</a>
     <a href="{{ url_for('main.admin_settings') }}"   {% if active_page == 'admin_settings' %}class="active"{% endif %}>Settings</a>
-    <button type="button" class="tb-nav-logout" id="logoutBtn">Log out</button>
   </nav>
 
   {% else %}
@@ -24,7 +23,9 @@
       <a href="{{ url_for('main.schedule') }}" {% if active_page == 'schedule' %}class="active"{% endif %}>Schedule</a>
     {% endif %}
     <a href="{{ url_for('main.sessions') }}"  {% if active_page == 'sessions' %}class="active"{% endif %}>My Sessions</a>
-    <a href="{{ url_for('main.messages_page') }}" {% if active_page == 'messages' %}class="active"{% endif %}>Messages</a>
+    {% if current_user.is_authenticated %}
+      <a href="{{ url_for('main.messages_page') }}" {% if active_page == 'messages' %}class="active"{% endif %}>Messages</a>
+    {% endif %}
     <a href="{{ url_for('main.profile') }}"   {% if active_page == 'profile' %}class="active"{% endif %}>Profile</a>
     <a href="{{ url_for('main.settings') }}"  {% if active_page == 'settings' %}class="active"{% endif %}>Settings</a>
     <a href="{{ url_for('main.help') }}"      {% if active_page == 'help' %}class="active"{% endif %}>Help</a>
@@ -69,6 +70,7 @@
           <a class="dd-item" role="menuitem" href="{{ url_for('main.admin_reports_page') }}">Reports</a>
           <a class="dd-item" role="menuitem" href="{{ url_for('main.admin_users') }}">Users</a>
           <a class="dd-item" role="menuitem" href="{{ url_for('main.admin_settings') }}">Settings</a>
+          <button type="button" class="dd-item danger" id="logoutBtn" role="menuitem">Log out</button>
         {% else %}
           <!-- Regular user dropdown items -->
           <a class="dd-item" role="menuitem" href="{{ url_for('main.profile') }}">View profile</a>
@@ -76,7 +78,9 @@
             <a class="dd-item" role="menuitem" href="{{ url_for('main.schedule') }}">Teaching Schedule</a>
           {% endif %}
           <a class="dd-item" role="menuitem" href="{{ url_for('main.sessions') }}">My Sessions</a>
-          <a class="dd-item" role="menuitem" href="{{ url_for('main.messages_page') }}">Messages</a>
+          {% if current_user.is_authenticated %}
+            <a class="dd-item" role="menuitem" href="{{ url_for('main.messages_page') }}">Messages</a>
+          {% endif %}
           <a class="dd-item" role="menuitem" href="{{ url_for('main.settings') }}">Settings</a>
           <a class="dd-item" role="menuitem" href="{{ url_for('main.help') }}">Help &amp; Support</a>
         {% endif %}
