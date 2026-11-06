@@ -53,13 +53,25 @@
         </label>
         <div class="r-pair">
           <label class="r-field">Password
-            <input type="password" id="password" name="password" autocomplete="new-password" placeholder="At least 8 characters">
+            <div class="r-password-wrap">
+              <input type="password" id="password" name="password" autocomplete="new-password" placeholder="At least 8 characters">
+              <button type="button" class="r-password-toggle" id="passwordToggle" aria-label="Show password" aria-controls="password" aria-pressed="false">
+                <svg class="r-eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="r-eye-closed hidden-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l16 16"/><path d="M10.6 6c.5-.1.9-.1 1.4-.1 6 0 9.5 6.1 9.5 6.1a17 17 0 0 1-2.7 3.4M6.6 6.9A16.6 16.6 0 0 0 2.5 12S6 18.1 12 18.1c1.3 0 2.5-.3 3.6-.7"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
+              </button>
+            </div>
             <div class="strength" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
             <small id="strengthText">Use upper and lower case letters and a number.</small>
             <p class="field-error" data-for="password"></p>
           </label>
           <label class="r-field">Confirm password
-            <input type="password" id="confirmPassword" name="confirm_password" autocomplete="new-password" placeholder="Enter it again">
+            <div class="r-password-wrap">
+              <input type="password" id="confirmPassword" name="confirm_password" autocomplete="new-password" placeholder="Enter it again">
+              <button type="button" class="r-password-toggle" id="confirmPasswordToggle" aria-label="Show password confirmation" aria-controls="confirmPassword" aria-pressed="false">
+                <svg class="r-eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="r-eye-closed hidden-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l16 16"/><path d="M10.6 6c.5-.1.9-.1 1.4-.1 6 0 9.5 6.1 9.5 6.1a17 17 0 0 1-2.7 3.4M6.6 6.9A16.6 16.6 0 0 0 2.5 12S6 18.1 12 18.1c1.3 0 2.5-.3 3.6-.7"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
+              </button>
+            </div>
             <p class="field-error" data-for="confirmPassword"></p>
           </label>
         </div>

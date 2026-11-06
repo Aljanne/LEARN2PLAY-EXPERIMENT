@@ -72,9 +72,7 @@
         <p>{{ role_label }}</p>
 
         <div class="mentor-profile-rating">
-          <span class="mentor-stars">★★★★★</span>
-          <strong>5.0</strong>
-          <span>(Verified Educator)</span>
+          <span>No learner reviews yet</span>
         </div>
       </div>
 
@@ -92,7 +90,13 @@
             Contact<small> for rate</small>
           {% endif %}
         </strong>
-        <a href="{{ url_for('main.sessions') }}" class="cta-btn" style="text-decoration:none; text-align:center;">Book a Session</a>
+        {% if current_user.is_authenticated and 'student' in current_user.roles and current_user.id != tutor.id %}
+          <button type="button" class="cta-btn" id="openBooking">Book a Session</button>
+        {% elif not current_user.is_authenticated %}
+          <a href="{{ url_for('main.auth_page') }}" class="cta-btn" style="text-decoration:none;text-align:center;">Sign in to Book</a>
+        {% else %}
+          <span class="empty-hint">Booking is available from a student account.</span>
+        {% endif %}
       </div>
     </section>
 
@@ -102,7 +106,7 @@
         <!-- Bio Card -->
         <div class="content-card mentor-profile-card">
           <h2>About {{ tutor.display_name }}</h2>
-          <p>{{ tutor.bio or "Verified Learn2Play educator in Naga City offering 1-on-1 personalized lessons and coaching." }}</p>
+          <p>{{ tutor.bio or "This mentor has not added an introduction yet." }}</p>
         </div>
 
         <!-- Specialties / Subjects -->
@@ -114,7 +118,7 @@
                 <span>{{ topic }}</span>
               {% endfor %}
             {% else %}
-              <p class="empty-hint">Available for general academic mentoring and gaming consultation.</p>
+              <p class="empty-hint">This mentor has not listed subjects or specialties yet.</p>
             {% endif %}
           </div>
         </div>
@@ -138,14 +142,43 @@
           </div>
           {% endif %}
 
-          <div class="mentor-detail-row">
-            <span>Location Format</span>
-            <strong>Online &amp; Naga City</strong>
-          </div>
+        </div>
+        <div class="content-card mentor-profile-card">
+          <h2>Weekly availability</h2>
+          {% set day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] %}
+          {% if availability %}
+            {% for window in availability %}
+            <div class="mentor-detail-row"><span>{{ day_names[window.weekday] }}</span><strong>{{ window.start_time }}–{{ window.end_time }}</strong></div>
+            {% endfor %}
+          {% else %}
+            <p class="empty-hint">This mentor has not added available times yet.</p>
+          {% endif %}
+          <p class="empty-hint">Times shown in Philippine Time (UTC+8).</p>
         </div>
       </div>
     </div>
   </main>
+
+  {% if current_user.is_authenticated and 'student' in current_user.roles and current_user.id != tutor.id %}
+  <div class="booking-overlay" id="bookingOverlay" hidden>
+    <section class="booking-modal content-card" role="dialog" aria-modal="true" aria-labelledby="bookingTitle">
+      <button type="button" class="booking-close" id="closeBooking" aria-label="Close">×</button>
+      <h2 id="bookingTitle">Book {{ tutor.display_name }}</h2>
+      <p class="booking-help">Select an available session time. Times use Philippine Time (UTC+8).</p>
+      <label>Date <input type="date" id="bookingDate" required></label>
+      <label>Available time <select id="bookingTime" required><option value="">Choose a date first</option></select></label>
+      <label>Subject or topic <input id="bookingTopic" maxlength="120" value="{{ tutor.topics[0] if tutor.topics else '' }}" placeholder="e.g. Algebra" required></label>
+      <label>Message (optional) <textarea id="bookingMessage" maxlength="1000" rows="3" placeholder="What would you like to work on?"></textarea></label>
+      <p class="booking-feedback" id="bookingFeedback" role="status"></p>
+      <button type="button" class="cta-btn" id="submitBooking">Send booking request</button>
+    </section>
+  </div>
+  {% endif %}
+
+  {% if current_user.is_authenticated and 'student' in current_user.roles and current_user.id != tutor.id %}
+  <script>window.L2TutorId = {{ tutor.id }};</script>
+  {% endif %}
+  <script src="{{ url_for('static', filename='js/booking.js') }}" defer></script>
 
 </body>
 </html>

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reports | Admin | Learn2Play</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <style>
+    body { display: block; padding: 0; }
+    .admin-layout { max-width: 1100px; margin: 0 auto; padding: 32px 24px 80px; }
+    .admin-page-header { margin-bottom: 24px; }
+    .admin-page-header h1 { color: var(--txt); font-size: 22px; font-weight: 600; }
+    .admin-page-header p  { color: var(--txt2); font-size: 14px; margin-top: 4px; }
+
+    .filter-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+    .ftab {
+      padding: 8px 18px; border-radius: 999px; font-size: 13px; font-weight: 500;
+      background: var(--card); border: 1px solid var(--line); color: var(--txt2);
+      cursor: pointer; transition: all .18s;
+    }
+    .ftab:hover { color: var(--txt); border-color: var(--purple); }
+    .ftab.active { background: var(--purple); color: #fff; border-color: var(--purple); }
+
+    .report-list { display: flex; flex-direction: column; gap: 14px; }
+    .report-card {
+      background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px;
+    }
+    .report-card.open { border-left: 3px solid var(--danger); }
+    .report-card.reviewed { border-left: 3px solid var(--green); }
+    .report-card.dismissed { border-left: 3px solid var(--txt3); }
+
+    .report-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+    .report-title { color: var(--txt); font-size: 15px; font-weight: 600; }
+    .report-date  { color: var(--txt3); font-size: 12px; white-space: nowrap; }
+
+    .report-parties { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 10px; }
+    .party { font-size: 13px; }
+    .party-label { color: var(--txt3); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; display: block; margin-bottom: 2px; }
+    .party-name  { color: var(--txt2); }
+    .party-email { color: var(--txt3); font-size: 11px; }
+
+    .report-details { color: var(--txt2); font-size: 13px; line-height: 19px; margin-bottom: 12px; }
+
+    .report-status-badge {
+      display: inline-block; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 999px;
+    }
+    .report-status-badge.open      { background: rgba(248,113,113,.15); color: var(--danger); }
+    .report-status-badge.reviewed  { background: rgba(74,222,128,.14);  color: #4ade80; }
+    .report-status-badge.dismissed { background: rgba(163,163,163,.12); color: var(--txt3); }
+
+    .report-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+    .btn-mark {
+      padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer;
+      border: 1px solid var(--line); background: var(--bg); color: var(--txt2); transition: all .18s;
+    }
+    .btn-mark:hover { border-color: var(--purple); color: var(--txt); }
+    .btn-mark.dismiss:hover { border-color: var(--txt3); }
+
+    .admin-note-wrap { margin-top: 8px; display: none; flex-direction: column; gap: 8px; }
+    .admin-note-wrap.open { display: flex; }
+    .note-input {
+      width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+      padding: 10px 12px; color: var(--txt); font-size: 13px; resize: vertical; min-height: 60px;
+    }
+    .note-input:focus { outline: none; border-color: var(--purple); }
+    .note-submit {
+      align-self: flex-end; padding: 7px 16px; border-radius: 8px; font-size: 13px; font-weight: 500;
+      background: var(--purple); color: #fff; border: none; cursor: pointer; transition: opacity .18s;
+    }
+    .note-submit:hover { opacity: .85; }
+
+    .admin-note-display {
+      margin-top: 8px; padding: 10px 12px; background: var(--bg); border: 1px solid var(--line);
+      border-radius: 8px; color: var(--txt2); font-size: 13px; line-height: 18px;
+    }
+    .admin-note-display strong { color: var(--txt3); font-size: 11px; display: block; margin-bottom: 4px; }
+
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--txt3); }
+    .empty-state .ei { font-size: 36px; margin-bottom: 10px; }
+    .empty-state h3 { color: var(--txt2); font-size: 16px; }
+
+    .toast {
+      position: fixed; bottom: 24px; right: 24px; z-index: 100;
+      background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+      padding: 12px 18px; color: var(--txt); font-size: 14px; max-width: 320px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.4); transform: translateY(80px); opacity: 0;
+      transition: all .3s ease; pointer-events: none;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.ok  { border-color: rgba(74,222,128,.4);  }
+    .toast.err { border-color: rgba(248,113,113,.4); }
+  </style>
+</head>
+<body class="dashboard">
+
+
+  {% set active_page = 'reports' %}
+  {% include '_navbar.html' %}
+
+
+  <div class="admin-layout">
+    <div class="admin-page-header">
+      <h1>Reports</h1>
+      <p>Review community reports submitted by users. Mark as reviewed or dismiss after investigation.</p>
+    </div>
+
+    <div class="filter-tabs">
+      <button class="ftab active" data-status="open">Open</button>
+      <button class="ftab" data-status="reviewed">Reviewed</button>
+      <button class="ftab" data-status="dismissed">Dismissed</button>
+      <button class="ftab" data-status="all">All</button>
+    </div>
+
+    <div class="report-list" id="reportList">
+      <div class="empty-state"><div class="ei">⏳</div><h3>Loading reports…</h3></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="{{ url_for('static', filename='js/script.js') }}" defer></script>
+  <script>
+    const reportList = document.getElementById('reportList');
+    const toast = document.getElementById('toast');
+
+    function showToast(msg, type = 'ok') {
+      toast.textContent = msg;
+      toast.className = 'toast show ' + type;
+      setTimeout(() => { toast.className = 'toast'; }, 3500);
+    }
+
+    function fmt(iso) {
+      return new Date(iso).toLocaleString('en-PH', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+    }
+
+    async function loadReports(status) {
+      reportList.innerHTML = '<div class="empty-state"><div class="ei">⏳</div><h3>Loading…</h3></div>';
+      const res = await fetch('/api/admin/reports?status=' + status, { credentials:'same-origin' });
+      const data = await res.json();
+      if (!data.ok || !data.reports.length) {
+        reportList.innerHTML = `<div class="empty-state"><div class="ei">📭</div><h3>No ${status} reports.</h3></div>`;
+        return;
+      }
+      reportList.innerHTML = '';
+      data.reports.forEach(r => renderReport(r));
+    }
+
+    function renderReport(r) {
+      const card = document.createElement('div');
+      card.className = 'report-card ' + r.status;
+      card.id = 'rpt-' + r.id;
+
+      const isOpen = r.status === 'open';
+      const noteHtml = r.admin_note
+        ? `<div class="admin-note-display"><strong>Admin note</strong>${r.admin_note}</div>` : '';
+      const actionsHtml = isOpen ? `
+        <div class="report-actions">
+          <button class="btn-mark" onclick="toggleNote(${r.id}, 'reviewed')">✅ Mark Reviewed</button>
+          <button class="btn-mark dismiss" onclick="toggleNote(${r.id}, 'dismissed')">🚫 Dismiss</button>
+        </div>
+        <div class="admin-note-wrap" id="nw-${r.id}">
+          <textarea class="note-input" id="note-${r.id}" placeholder="Add a note (optional)…"></textarea>
+          <button class="note-submit" id="nsub-${r.id}">Confirm</button>
+        </div>` : '';
+
+      card.innerHTML = `
+        <div class="report-header">
+          <div>
+            <div class="report-title">🚩 ${r.reason}</div>
+            <span class="report-status-badge ${r.status}">${r.status.charAt(0).toUpperCase() + r.status.slice(1)}</span>
+          </div>
+          <div class="report-date">${fmt(r.created_at)}</div>
+        </div>
+        <div class="report-parties">
+          <div class="party">
+            <span class="party-label">Reporter</span>
+            <div class="party-name">${r.reporter ? r.reporter.name : 'Unknown'}</div>
+            <div class="party-email">${r.reporter ? r.reporter.email : ''}</div>
+          </div>
+          <div class="party">
+            <span class="party-label">Reported User</span>
+            <div class="party-name">${r.reported ? r.reported.name : 'Unknown'}</div>
+            <div class="party-email">${r.reported ? r.reported.email : ''}</div>
+          </div>
+          ${r.appointment_id ? `<div class="party"><span class="party-label">Session ID</span><div class="party-name">#${r.appointment_id}</div></div>` : ''}
+        </div>
+        ${r.details ? `<div class="report-details">${r.details}</div>` : ''}
+        ${noteHtml}
+        ${actionsHtml}
+      `;
+      reportList.appendChild(card);
+    }
+
+    let pendingAction = {};
+    function toggleNote(id, action) {
+      const nw = document.getElementById('nw-' + id);
+      pendingAction[id] = action;
+      nw.classList.toggle('open');
+      document.getElementById('nsub-' + id).onclick = () => submitAction(id, action);
+    }
+
+    async function submitAction(id, action) {
+      const note = document.getElementById('note-' + id).value;
+      const res = await fetch('/api/admin/reports/' + id + '/' + action, {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ note })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        document.getElementById('rpt-' + id).remove();
+        showToast('Report ' + action + '.', 'ok');
+      } else {
+        showToast(data.message || 'Error.', 'err');
+      }
+    }
+
+    document.querySelectorAll('.ftab').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.ftab').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        loadReports(this.dataset.status);
+      });
+    });
+
+    document.getElementById('userAvatar').addEventListener('click', () =>
+      document.getElementById('profileDropdown').classList.toggle('hidden'));
+    document.addEventListener('click', e => {
+      if (!document.getElementById('profileMenu').contains(e.target))
+        document.getElementById('profileDropdown').classList.add('hidden');
+    });
+    document.getElementById('logoutBtn').addEventListener('click', () =>
+      fetch('/api/auth/logout', { method:'POST', credentials:'same-origin' }).then(() => location.href = '/auth'));
+
+    loadReports('open');
+  </script>
+</body>
+</html>

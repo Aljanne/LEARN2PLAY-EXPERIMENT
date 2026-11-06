@@ -38,6 +38,23 @@
     $("note").style.color = "var(--danger)";
   }
 
+  function setupPasswordToggle(inputId, buttonId, label) {
+    const input = $(inputId);
+    const button = $(buttonId);
+
+    button.addEventListener("click", () => {
+      const show = input.type === "password";
+      input.type = show ? "text" : "password";
+      button.querySelector(".r-eye-open").classList.toggle("hidden-svg", show);
+      button.querySelector(".r-eye-closed").classList.toggle("hidden-svg", !show);
+      button.setAttribute("aria-label", `${show ? "Hide" : "Show"} ${label}`);
+      button.setAttribute("aria-pressed", String(show));
+    });
+  }
+
+  setupPasswordToggle("password", "passwordToggle", "password");
+  setupPasswordToggle("confirmPassword", "confirmPasswordToggle", "password confirmation");
+
   // ---------- role toggling ----------
   function syncRoles() {
     const show = needsCreds();
@@ -165,7 +182,14 @@
   }
 
   form.addEventListener("submit", async (event) => {
-  event.preventDefault();
+    event.preventDefault();
+    clearErrors();
+
+    const errors = validate();
+    if (Object.keys(errors).length > 0) {
+      Object.entries(errors).forEach(([field, message]) => setError(field, message));
+      return;
+    }
 
     const body = new FormData();
     getRoles().forEach((r) => body.append("roles", r));
@@ -173,7 +197,7 @@
     body.append("email", $("email").value.trim());
     body.append("password", $("password").value);
     body.append("confirm_password", $("confirmPassword").value);
-    body.append("acknowledged", "true");
+    if ($("ack").checked) body.append("acknowledged", "true");
     if (needsCreds()) {
       body.append("bio", $("bio").value.trim());
       parseLinks().forEach((l) => body.append("links", l));

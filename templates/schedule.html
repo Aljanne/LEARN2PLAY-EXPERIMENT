@@ -9,57 +9,10 @@
 <body class="dashboard schedule-body">
 
   <!-- Top Navbar -->
-  <header class="topbar">
-    <a class="tb-brand" href="{{ url_for('main.dashboard') }}">
-      <div class="logo">L2</div>
-      <span class="brand-name">Learn2Play</span>
-    </a>
 
-    <!-- Unified Navigation -->
-    <nav class="tb-nav" aria-label="Main navigation">
-      <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
-      <a href="{{ url_for('main.schedule') }}" class="active">Schedule</a>
-      <a href="{{ url_for('main.sessions') }}">My Sessions</a>
-      <a href="{{ url_for('main.profile') }}">Profile</a>
-      <a href="{{ url_for('main.settings') }}">Settings</a>
-      <a href="{{ url_for('main.help') }}">Help</a>
-    </nav>
+  {% set active_page = 'schedule' %}
+  {% include '_navbar.html' %}
 
-    <!-- Profile Dropdown -->
-    <div class="tb-right">
-      <div class="tb-profile" id="profileMenu">
-        <button class="tb-avatar" id="userAvatar" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="profileDropdown">
-          {% if current_user.is_authenticated and current_user.profile_picture %}
-            <img src="{{ current_user.profile_picture }}" alt="Avatar" class="avatar-img">
-          {% else %}
-            {{ current_user.display_name[:1] | upper if current_user.is_authenticated and current_user.display_name else 'U' }}
-          {% endif %}
-        </button>
-
-        <div class="dropdown hidden" id="profileDropdown" role="menu">
-          <div class="dd-header">
-            <div class="dd-name" id="menuName">{{ current_user.display_name }}</div>
-            <div class="dd-email" id="menuEmail">{{ current_user.email }}</div>
-            <div class="dd-roles" id="menuRoles">
-              {% for role in current_user.roles %}
-                <span class="pill {{ 'g' if role == 'coach' else 'a' }}">
-                  {{ "Teacher" if role == "mentor" else (role | title) }}
-                </span>
-              {% endfor %}
-            </div>
-          </div>
-
-          <a class="dd-item" role="menuitem" href="{{ url_for('main.profile') }}">View profile</a>
-          <a class="dd-item" role="menuitem" href="{{ url_for('main.schedule') }}">Teaching Schedule</a>
-          <a class="dd-item" role="menuitem" href="{{ url_for('main.sessions') }}">My sessions</a>
-          <a class="dd-item" role="menuitem" href="{{ url_for('main.settings') }}">Settings</a>
-          <a class="dd-item" role="menuitem" href="{{ url_for('main.help') }}">Help &amp; support</a>
-          <div class="dd-sep"></div>
-          <button type="button" class="dd-item danger" id="logoutBtn" role="menuitem">Log out</button>
-        </div>
-      </div>
-    </div>
-  </header>
 
   <!-- Schedule Page Content -->
   <main class="schedule-page">
@@ -82,6 +35,25 @@
         <span class="tz-dot"></span>
         <span>All times shown in <strong>{{ timezone_label }}</strong></span>
       </div>
+    </section>
+
+    <section class="availability-panel content-card">
+      <h2>Weekly availability</h2>
+      <p>Set recurring one hour booking windows in Philippine Time. Existing requests keep their booked times.</p>
+      <form id="availabilityForm" class="availability-form">
+        <label>Day <select id="availabilityDay"><option value="0">Monday</option><option value="1">Tuesday</option><option value="2">Wednesday</option><option value="3">Thursday</option><option value="4">Friday</option><option value="5">Saturday</option><option value="6">Sunday</option></select></label>
+        <label>From <input id="availabilityStart" type="time" step="3600" required></label>
+        <label>Until <input id="availabilityEnd" type="time" step="3600" required></label>
+        <button class="edit-profile-btn" type="submit">Add availability</button>
+      </form>
+      <p id="availabilityFeedback" role="status" class="booking-feedback"></p>
+      <div id="availabilityList" class="availability-list"><p class="stat-sub">Loading availability…</p></div>
+      <h3 class="availability-subheading">Mark a date unavailable</h3>
+      <form id="unavailableForm" class="availability-form">
+        <label>Date <input id="unavailableDate" type="date" required></label>
+        <button class="edit-profile-btn" type="submit">Block date</button>
+      </form>
+      <div id="unavailableList" class="availability-list"></div>
     </section>
 
     <!-- Stat Summary Bar -->
@@ -306,5 +278,6 @@
       });
     }
   </script>
+  <script src="{{ url_for('static', filename='js/availability.js') }}" defer></script>
 </body>
 </html>
