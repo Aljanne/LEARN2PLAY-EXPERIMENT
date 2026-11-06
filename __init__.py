@@ -29,9 +29,9 @@ def create_app():
 
     # Import models so SQLAlchemy knows about them
     if __package__:
-        from .models import Appointment, Credential, Message, Report, RoleApplication, User
+        from .models import Appointment, Credential, MentorAvailability, MentorUnavailableDate, Message, Report, RoleApplication, User
     else:
-        from models import Appointment, Credential, Message, Report, RoleApplication, User
+        from models import Appointment, Credential, MentorAvailability, MentorUnavailableDate, Message, Report, RoleApplication, User
 
     # Tell Flask-Login how to find a user by ID
     @login_manager.user_loader
@@ -54,6 +54,13 @@ def create_app():
     with app.app_context():
         # Creates appointments table and any missing tables safely
         db.create_all()
+
+        # Safe additive compatibility for existing local/deployed databases.
+        try:
+            db.session.execute(text("ALTER TABLE appointments ADD COLUMN meeting_room VARCHAR(80)"))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
 
         # Add topics_json column if missing
         try:

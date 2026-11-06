@@ -411,8 +411,8 @@
     // ---- Avatar ----
     function avatarHtml(user, size = 40, cls = 'thread-avatar') {
       const inner = user && user.avatar
-        ? `<img src="${user.avatar}" alt="">`
-        : (user ? user.name[0].toUpperCase() : '?');
+        ? `<img src="${escHtml(user.avatar)}" alt="">`
+        : (user ? escHtml((user.name || '?')[0].toUpperCase()) : '?');
       return `<div class="${cls}" style="width:${size}px;height:${size}px;">${inner}</div>`;
     }
 
@@ -449,9 +449,9 @@
         item.innerHTML = `
           ${avatarHtml(t.other_user, 40, 'thread-avatar')}
           <div class="thread-info">
-            <div class="thread-name">${t.other_user ? t.other_user.name : 'Unknown'}</div>
-            ${t.type === 'session' ? `<div class="session-tag">📅 ${t.topic || 'Session'}</div>` : ''}
-            <div class="thread-preview">${t.last_message || ''}</div>
+            <div class="thread-name">${t.other_user ? escHtml(t.other_user.name) : 'Unknown'}</div>
+            ${t.type === 'session' ? `<div class="session-tag">📅 ${escHtml(t.topic || 'Session')}</div>` : ''}
+            <div class="thread-preview">${escHtml(t.last_message || '')}</div>
           </div>
           <div class="thread-meta">
             <div class="thread-time">${t.last_at ? fmtTime(t.last_at) : ''}</div>
@@ -482,8 +482,8 @@
         <div class="chat-header">
           ${avatarHtml(thread.other_user, 36, 'chat-header-avatar')}
           <div class="chat-header-info">
-            <div class="chat-header-name">${name}</div>
-            <div class="chat-header-sub">${sub}</div>
+            <div class="chat-header-name">${escHtml(name)}</div>
+            <div class="chat-header-sub">${escHtml(sub)}</div>
           </div>
           <button class="report-btn" id="reportUserBtn">🚩 Report</button>
         </div>
@@ -492,7 +492,7 @@
         </div>
         <div class="chat-input-bar">
           <div class="chat-input-wrap">
-            <textarea class="chat-input" id="chatInput" placeholder="Message ${name}…" rows="1"></textarea>
+            <textarea class="chat-input" id="chatInput" placeholder="Message ${escHtml(name)}…" rows="1"></textarea>
           </div>
           <button class="send-btn" id="sendBtn" title="Send">
             <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -556,7 +556,7 @@
         const row = document.createElement('div');
         row.className = 'msg-row' + (isMine ? ' mine' : '');
         const avatarSrc = !isMine && currentThread && currentThread.other_user && currentThread.other_user.avatar
-          ? `<img src="${currentThread.other_user.avatar}" alt="">` : '👤';
+          ? `<img src="${escHtml(currentThread.other_user.avatar)}" alt="">` : '👤';
         row.innerHTML = `
           ${!isMine ? `<div class="msg-avatar">${avatarSrc}</div>` : ''}
           <div>
@@ -678,7 +678,7 @@
           const item = document.createElement('div');
           item.className = 'modal-user';
           item.innerHTML = `
-            <div class="modal-user-av">${u.name[0].toUpperCase()}</div>
+            <div class="modal-user-av">${escHtml((u.name || '?')[0].toUpperCase())}</div>
             <div>
               <div class="modal-user-name">${escHtml(u.name)}</div>
               <div class="modal-user-role">Student</div>

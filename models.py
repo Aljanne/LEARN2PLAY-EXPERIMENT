@@ -141,6 +141,7 @@ class Appointment(db.Model):
     location_type = db.Column(db.String(50), default="Online")            # Online | In-person
     meeting_link = db.Column(db.String(255), nullable=True)
     notes = db.Column(db.Text, nullable=True)
+    meeting_room = db.Column(db.String(80), nullable=True, unique=True)
 
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=utcnow, onupdate=utcnow)
@@ -208,3 +209,25 @@ class Message(db.Model):
 
     def __repr__(self):
         return f"<Message #{self.id} from={self.sender_id} to={self.recipient_id}>"
+
+
+class MentorAvailability(db.Model):
+    """A recurring weekly availability window, stored as local PHT wall time."""
+    __tablename__ = "mentor_availability"
+
+    id = db.Column(db.Integer, primary_key=True)
+    mentor_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    weekday = db.Column(db.Integer, nullable=False)  # Monday=0
+    start_time = db.Column(db.String(5), nullable=False)  # HH:MM
+    end_time = db.Column(db.String(5), nullable=False)
+    mentor = db.relationship("User", backref="availability_windows")
+    __table_args__ = (db.UniqueConstraint("mentor_id", "weekday", "start_time", "end_time"),)
+
+
+class MentorUnavailableDate(db.Model):
+    __tablename__ = "mentor_unavailable_dates"
+
+    id = db.Column(db.Integer, primary_key=True)
+    mentor_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    unavailable_date = db.Column(db.Date, nullable=False)
+    __table_args__ = (db.UniqueConstraint("mentor_id", "unavailable_date"),)

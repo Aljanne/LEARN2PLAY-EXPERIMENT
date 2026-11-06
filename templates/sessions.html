@@ -90,12 +90,12 @@
             <section class="session-summary" aria-label="Mentor session summary">
                 <div class="session-summary-card mentor-summary-card">
                     <span class="session-summary-label">Pending requests</span>
-                    <strong>0</strong>
+                    <strong id="mentorPendingCount">0</strong>
                     <small>need your response</small>
                 </div>
                 <div class="session-summary-card mentor-summary-card">
                     <span class="session-summary-label">Upcoming learners</span>
-                    <strong>0</strong>
+                    <strong id="mentorUpcomingCount">0</strong>
                     <small>sessions this week</small>
                 </div>
                 <div class="session-summary-card mentor-summary-card">
@@ -113,7 +113,7 @@
                             <h2 id="requests-heading">Booking requests</h2>
                             <p>Review and respond to learners who want to work with you.</p>
                         </div>
-                        <span class="mentor-request-count">0 new</span>
+                        <span class="mentor-request-count" id="mentorRequestCount">0 new</span>
                     </div>
 
                     <div class="mentor-request-list" id="mentorRequestList">
@@ -144,6 +144,7 @@
         </div>
     </main>
 
+    <script>window.L2UserId = {{ current_user.id }};</script>
     <script src="{{ url_for('static', filename='js/sessions.js') }}" defer></script>
 </body>
 </html>

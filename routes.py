@@ -1,7 +1,7 @@
 import os
 import re
 import uuid
-from datetime import timedelta
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal, InvalidOperation
 from functools import wraps
 from pathlib import Path
@@ -29,10 +29,10 @@ from werkzeug.utils import secure_filename
 
 if __package__:
     from .extensions import db
-    from .models import Appointment, Credential, Message, Report, RoleApplication, User, utcnow
+    from .models import Appointment, Credential, MentorAvailability, MentorUnavailableDate, Message, Report, RoleApplication, User, utcnow
 else:
     from extensions import db
-    from models import Appointment, Credential, Message, Report, RoleApplication, User, utcnow
+    from models import Appointment, Credential, MentorAvailability, MentorUnavailableDate, Message, Report, RoleApplication, User, utcnow
 
 main = Blueprint("main", __name__)
 
@@ -763,10 +763,224 @@ def get_provider_schedule_api():
             "location_type": appt.location_type or "Online",
             "meeting_link": appt.meeting_link or "",
             "notes": appt.notes or "",
-            "is_upcoming": appt.status == "scheduled" and appt.start_time >= now,
+            "is_upcoming": appt.status in ("accepted", "scheduled") and appt.start_time >= now,
         })
 
     return jsonify({"ok": True, "appointments": items, "timezone": "Philippine Time (PHT, UTC+8)"})
+
+
+@main.route("/api/tutors/<int:user_id>/availability", methods=["GET"])
+@login_required
+def tutor_availability(user_id):
+    mentor = db.session.get(User, user_id)
+    if not mentor or not mentor.is_active or not any(r in mentor.roles for r in ("mentor", "coach")):
+        return error("Mentor not found.", 404)
+    day_text = request.args.get("date", "")
+    try:
+        selected = date.fromisoformat(day_text)
+    except ValueError:
+        return error("Choose a valid date.")
+    today = utcnow() + timedelta(hours=8)
+    if selected < today.date() or selected > today.date() + timedelta(days=60):
+        return jsonify({"ok": True, "slots": []})
+    if MentorUnavailableDate.query.filter_by(mentor_id=user_id, unavailable_date=selected).first():
+        return jsonify({"ok": True, "slots": []})
+    windows = MentorAvailability.query.filter_by(mentor_id=user_id, weekday=selected.weekday()).all()
+    slots = []
+    booked = Appointment.query.filter(Appointment.status.in_(["pending", "accepted", "scheduled"]),
+        ((Appointment.provider_id == user_id) | (Appointment.student_id == current_user.id))).all()
+    for window in windows:
+        start = datetime.combine(selected, time.fromisoformat(window.start_time))
+        end = datetime.combine(selected, time.fromisoformat(window.end_time))
+        while start + timedelta(hours=1) <= end:
+            utc_start = start - timedelta(hours=8)
+            conflict = any(a.start_time < utc_start + timedelta(hours=1) and
+                a.start_time + timedelta(minutes=a.duration_minutes or 60) > utc_start for a in booked)
+            if not conflict and start > today:
+                slots.append(start.strftime("%H:%M"))
+            start += timedelta(hours=1)
+    return jsonify({"ok": True, "slots": slots, "timezone": "Asia/Manila"})
+
+
+@main.route("/api/availability", methods=["GET", "POST", "DELETE"])
+@provider_required
+def manage_availability():
+    if request.method == "GET":
+        rows = MentorAvailability.query.filter_by(mentor_id=current_user.id).order_by(
+            MentorAvailability.weekday, MentorAvailability.start_time
+        ).all()
+        return jsonify({"ok": True, "availability": [
+            {"id": r.id, "weekday": r.weekday, "start_time": r.start_time, "end_time": r.end_time}
+            for r in rows
+        ]})
+    data = request.get_json(silent=True) or {}
+    if request.method == "DELETE":
+        row = MentorAvailability.query.filter_by(id=data.get("id"), mentor_id=current_user.id).first()
+        if not row:
+            return error("Availability window not found.", 404)
+        db.session.delete(row)
+        db.session.commit()
+        return jsonify({"ok": True})
+    try:
+        weekday = int(data.get("weekday"))
+        start = time.fromisoformat(str(data.get("start_time", "")))
+        end = time.fromisoformat(str(data.get("end_time", "")))
+    except (ValueError, TypeError):
+        return error("Choose a weekday and valid start and end times.")
+    if weekday not in range(7) or start >= end or start.minute % 60 or end.minute % 60:
+        return error("Availability must use whole-hour slots with the end after the start.")
+    row = MentorAvailability(mentor_id=current_user.id, weekday=weekday,
+                             start_time=start.strftime("%H:%M"), end_time=end.strftime("%H:%M"))
+    db.session.add(row)
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return error("That availability window already exists.")
+    return jsonify({"ok": True, "id": row.id}), 201
+
+
+@main.route("/api/unavailable-dates", methods=["GET", "POST", "DELETE"])
+@provider_required
+def manage_unavailable_dates():
+    if request.method == "GET":
+        rows = MentorUnavailableDate.query.filter_by(mentor_id=current_user.id).order_by(
+            MentorUnavailableDate.unavailable_date
+        ).all()
+        return jsonify({"ok": True, "dates": [{"id": r.id, "date": r.unavailable_date.isoformat()} for r in rows]})
+    data = request.get_json(silent=True) or {}
+    if request.method == "DELETE":
+        row = MentorUnavailableDate.query.filter_by(id=data.get("id"), mentor_id=current_user.id).first()
+        if not row:
+            return error("Unavailable date not found.", 404)
+        db.session.delete(row)
+        db.session.commit()
+        return jsonify({"ok": True})
+    try:
+        selected = date.fromisoformat(data.get("date", ""))
+    except (ValueError, TypeError):
+        return error("Choose a valid date.")
+    today = (utcnow() + timedelta(hours=8)).date() + timedelta(days=1)
+    if selected < today or selected > today + timedelta(days=365):
+        return error("Unavailable dates must be within the next year.")
+    row = MentorUnavailableDate(mentor_id=current_user.id, unavailable_date=selected)
+    db.session.add(row)
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return error("That date is already marked unavailable.")
+    return jsonify({"ok": True}), 201
+
+
+@main.route("/api/bookings", methods=["POST"])
+@login_required
+def create_booking():
+    if "student" not in current_user.roles or current_user.is_admin:
+        return error("Only student accounts can request a session.", 403)
+    data = request.get_json(silent=True) or {}
+    try:
+        mentor_id = int(data.get("mentor_id"))
+    except (TypeError, ValueError):
+        return error("Mentor not found.", 404)
+    mentor = db.session.get(User, mentor_id)
+    topic = (data.get("topic") or "").strip()[:120]
+    message = (data.get("message") or "").strip()[:1000]
+    try:
+        day = date.fromisoformat(data.get("date", ""))
+        slot = time.fromisoformat(data.get("time", ""))
+    except (TypeError, ValueError):
+        return error("Choose an available date and time.")
+    if not mentor or not mentor.is_active or not any(r in mentor.roles for r in ("mentor", "coach")):
+        return error("Mentor not found.", 404)
+    if not topic:
+        return error("Enter a subject or session topic.", field="topic")
+    if slot.minute or slot.second or slot.microsecond:
+        return error("Choose a whole-hour available slot.")
+    if MentorUnavailableDate.query.filter_by(mentor_id=mentor.id, unavailable_date=day).first():
+        return error("The mentor is unavailable on that date.")
+    window = MentorAvailability.query.filter_by(mentor_id=mentor.id, weekday=day.weekday()).filter(
+        MentorAvailability.start_time <= slot.strftime("%H:%M"),
+        MentorAvailability.end_time >= (datetime.combine(day, slot) + timedelta(hours=1)).strftime("%H:%M"),
+    ).first()
+    start_utc = datetime.combine(day, slot) - timedelta(hours=8)
+    now_utc = utcnow()
+    if not window or start_utc <= now_utc or start_utc > now_utc + timedelta(days=60):
+        return error("That time is outside the mentor's available schedule.")
+    booked = Appointment.query.filter(Appointment.status.in_(["pending", "accepted", "scheduled"]),
+        ((Appointment.provider_id == mentor.id) | (Appointment.student_id == current_user.id))).all()
+    clash = any(a.start_time < start_utc + timedelta(hours=1) and
+        a.start_time + timedelta(minutes=a.duration_minutes or 60) > start_utc for a in booked)
+    if clash:
+        return error("That time was just booked. Please choose another slot.", 409)
+    role = "mentor" if "mentor" in mentor.roles else "coach"
+    rate = mentor.teaching_rate if role == "mentor" else mentor.coaching_rate
+    if rate is None:
+        rate = mentor.hourly_rate
+    appt = Appointment(provider_id=mentor.id, student_id=current_user.id, role=role,
+        topic=topic, start_time=start_utc, duration_minutes=60, status="pending",
+        price=rate, currency="PHP", location_type="Online", notes=message)
+    db.session.add(appt)
+    db.session.commit()
+    return jsonify({"ok": True, "booking_id": appt.id, "message": "Booking request sent to the mentor."}), 201
+
+
+@main.route("/api/bookings", methods=["GET"])
+@login_required
+def list_my_bookings():
+    rows = Appointment.query.filter(
+        (Appointment.student_id == current_user.id) | (Appointment.provider_id == current_user.id)
+    ).order_by(Appointment.start_time.asc()).all()
+    return jsonify({"ok": True, "bookings": [{
+        "id": a.id, "student_id": a.student_id, "provider_id": a.provider_id,
+        "student": a.student.display_name if a.student else "Student",
+        "mentor": a.provider.display_name if a.provider else "Mentor",
+        "topic": a.topic, "status": a.status, "start_time": a.start_time.isoformat(),
+        "formatted": format_dt_pht(a.start_time), "duration": a.duration_minutes,
+        "price": float(a.price) if a.price is not None else None, "notes": a.notes or "",
+        "meeting_room": bool(a.meeting_room)
+    } for a in rows]})
+
+
+@main.route("/api/bookings/<int:booking_id>/<action>", methods=["POST"])
+@login_required
+def update_booking(booking_id, action):
+    appt = db.session.get(Appointment, booking_id)
+    if not appt:
+        return error("Booking not found.", 404)
+    if action in ("accept", "reject"):
+        if appt.provider_id != current_user.id or appt.status != "pending":
+            return error("You cannot update this booking.", 403)
+        if action == "reject":
+            appt.status = "rejected"
+        else:
+            appt.status = "accepted"
+            appt.meeting_room = appt.meeting_room or "l2-" + secrets.token_urlsafe(18)
+    elif action == "cancel":
+        if current_user.id not in (appt.student_id, appt.provider_id) or appt.status not in ("pending", "accepted", "scheduled"):
+            return error("You cannot cancel this booking.", 403)
+        appt.status = "cancelled"
+    elif action == "complete":
+        if appt.provider_id != current_user.id or appt.status not in ("accepted", "scheduled"):
+            return error("You cannot complete this session.", 403)
+        if appt.start_time + timedelta(minutes=appt.duration_minutes or 60) > utcnow():
+            return error("A session can be completed after its scheduled end time.")
+        appt.status = "completed"
+    else:
+        return error("Unsupported booking action.")
+    db.session.commit()
+    return jsonify({"ok": True, "status": appt.status})
+
+
+@main.route("/api/sessions/<int:booking_id>/join", methods=["GET"])
+@login_required
+def join_session(booking_id):
+    appt = db.session.get(Appointment, booking_id)
+    if not appt or (appt.student_id != current_user.id and appt.provider_id != current_user.id):
+        return error("Session not found.", 404)
+    if appt.status not in ("accepted", "scheduled") or not appt.meeting_room:
+        return error("The mentor has not confirmed this session.", 403)
+    return jsonify({"ok": True, "url": "https://meet.jit.si/" + appt.meeting_room})
 
 
 # ---------- Frontend View Routes ----------
@@ -784,7 +998,7 @@ def dashboard():
         now = utcnow()
         # Actual upcoming session
         next_session = (
-            Appointment.query.filter_by(provider_id=current_user.id, status="scheduled")
+            Appointment.query.filter(Appointment.provider_id == current_user.id, Appointment.status.in_(["accepted", "scheduled"]))
             .filter(Appointment.start_time >= now)
             .order_by(Appointment.start_time.asc())
             .first()
@@ -792,7 +1006,7 @@ def dashboard():
         # Actual previous session
         prev_session = (
             Appointment.query.filter_by(provider_id=current_user.id)
-            .filter((Appointment.status == "completed") | ((Appointment.status == "scheduled") & (Appointment.start_time < now)))
+            .filter((Appointment.status == "completed") | (Appointment.status.in_(["accepted", "scheduled"]) & (Appointment.start_time < now)))
             .order_by(Appointment.start_time.desc())
             .first()
         )
@@ -819,7 +1033,7 @@ def schedule():
 
     # Nearest upcoming scheduled sessions
     upcoming = (
-        Appointment.query.filter_by(provider_id=current_user.id, status="scheduled")
+        Appointment.query.filter(Appointment.provider_id == current_user.id, Appointment.status.in_(["accepted", "scheduled"]))
         .filter(Appointment.start_time >= now)
         .order_by(Appointment.start_time.asc())
         .all()
@@ -830,7 +1044,7 @@ def schedule():
         Appointment.query.filter_by(provider_id=current_user.id)
         .filter(
             (Appointment.status == "completed")
-            | ((Appointment.status == "scheduled") & (Appointment.start_time < now))
+            | (Appointment.status.in_(["accepted", "scheduled"]) & (Appointment.start_time < now))
         )
         .order_by(Appointment.start_time.desc())
         .all()
@@ -838,7 +1052,7 @@ def schedule():
 
     # Cancelled sessions
     cancelled = (
-        Appointment.query.filter_by(provider_id=current_user.id, status="cancelled")
+        Appointment.query.filter(Appointment.provider_id == current_user.id, Appointment.status.in_(["cancelled", "rejected"]))
         .order_by(Appointment.start_time.desc())
         .all()
     )
@@ -875,6 +1089,9 @@ def view_tutor_profile(user_id):
         role_label=role_label,
         is_mentor=is_mentor,
         is_coach=is_coach,
+        availability=MentorAvailability.query.filter_by(mentor_id=tutor.id).order_by(
+            MentorAvailability.weekday, MentorAvailability.start_time
+        ).all(),
     )
 
 @main.route("/profile")
@@ -928,9 +1145,15 @@ def get_pending_roles(user):
 def admin_stats():
     pending_count = RoleApplication.query.filter_by(status="pending").count()
     total_users = User.query.count()
-    total_mentors = sum(1 for u in User.query.all() if "mentor" in u.roles)
-    total_coaches = sum(1 for u in User.query.all() if "coach" in u.roles)
+    all_users = User.query.all()
+    total_mentors = sum(1 for u in all_users if "mentor" in u.roles)
+    total_coaches = sum(1 for u in all_users if "coach" in u.roles)
+    total_students = sum(1 for u in all_users if "student" in u.roles)
     total_sessions = Appointment.query.count()
+    pending_bookings = Appointment.query.filter_by(status="pending").count()
+    now = utcnow()
+    upcoming = Appointment.query.filter(Appointment.status.in_(["accepted", "scheduled"]), Appointment.start_time >= now).count()
+    recent = Appointment.query.order_by(Appointment.created_at.desc()).limit(8).all()
     open_reports = Report.query.filter_by(status="open").count()
     return jsonify({
         "ok": True,
@@ -938,7 +1161,14 @@ def admin_stats():
         "total_users": total_users,
         "total_mentors": total_mentors,
         "total_coaches": total_coaches,
+        "total_students": total_students,
         "total_sessions": total_sessions,
+        "total_bookings": total_sessions,
+        "pending_bookings": pending_bookings,
+        "upcoming_sessions": upcoming,
+        "recent_activity": [{"student": a.student.display_name if a.student else "Student",
+            "mentor": a.provider.display_name if a.provider else "Mentor", "topic": a.topic,
+            "status": a.status, "created_at": format_dt_pht(a.created_at)} for a in recent],
         "open_reports": open_reports,
     })
 
@@ -1286,6 +1516,9 @@ def send_message_api():
         uid = current_user.id
         if appt.student_id != uid and appt.provider_id != uid:
             return error("You are not part of this session.", 403)
+        expected_recipient = appt.provider_id if uid == appt.student_id else appt.student_id
+        if recipient_id != expected_recipient:
+            return error("Session messages can only be sent to the other participant.", 403)
 
     try:
         msg = Message(

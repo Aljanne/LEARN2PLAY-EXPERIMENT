@@ -37,6 +37,25 @@
       </div>
     </section>
 
+    <section class="availability-panel content-card">
+      <h2>Weekly availability</h2>
+      <p>Set recurring one hour booking windows in Philippine Time. Existing requests keep their booked times.</p>
+      <form id="availabilityForm" class="availability-form">
+        <label>Day <select id="availabilityDay"><option value="0">Monday</option><option value="1">Tuesday</option><option value="2">Wednesday</option><option value="3">Thursday</option><option value="4">Friday</option><option value="5">Saturday</option><option value="6">Sunday</option></select></label>
+        <label>From <input id="availabilityStart" type="time" step="3600" required></label>
+        <label>Until <input id="availabilityEnd" type="time" step="3600" required></label>
+        <button class="edit-profile-btn" type="submit">Add availability</button>
+      </form>
+      <p id="availabilityFeedback" role="status" class="booking-feedback"></p>
+      <div id="availabilityList" class="availability-list"><p class="stat-sub">Loading availability…</p></div>
+      <h3 class="availability-subheading">Mark a date unavailable</h3>
+      <form id="unavailableForm" class="availability-form">
+        <label>Date <input id="unavailableDate" type="date" required></label>
+        <button class="edit-profile-btn" type="submit">Block date</button>
+      </form>
+      <div id="unavailableList" class="availability-list"></div>
+    </section>
+
     <!-- Stat Summary Bar -->
     <section class="schedule-stats-bar">
       <div class="stat-summary-card">
@@ -259,5 +278,6 @@
       });
     }
   </script>
+  <script src="{{ url_for('static', filename='js/availability.js') }}" defer></script>
 </body>
 </html>

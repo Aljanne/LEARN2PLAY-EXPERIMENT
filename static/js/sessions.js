@@ -107,8 +107,54 @@
         });
     }
 
+    const escapeHtml = value => String(value || "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+    async function loadBookings() {
+        try {
+            const data = await fetch("/api/bookings", {credentials:"same-origin"}).then(r => r.json());
+            if (!data.ok) throw new Error(data.message || "Could not load bookings.");
+            const bookings = data.bookings || [];
+            if (sessionList) {
+                const mine = bookings.filter(b => b.student_id === window.L2UserId);
+                const meaningful = mine.filter(b => ["pending", "accepted", "scheduled", "completed", "cancelled", "rejected"].includes(b.status));
+                sessionList.innerHTML = meaningful.map(b => `<article class="scheduled-session" data-status="${["completed","cancelled","rejected"].includes(b.status) ? "completed" : "upcoming"}"><div class="session-details"><div class="session-title-row"><h3>${escapeHtml(b.topic)}</h3><span class="session-status">${escapeHtml(b.status)}</span></div><p>${escapeHtml(b.mentor)} · ${escapeHtml(b.formatted)}</p>${b.notes ? `<p>${escapeHtml(b.notes)}</p>` : ""}</div><div class="session-actions-buttons">${b.status === "accepted" || b.status === "scheduled" ? `<button class="session-action join-session" data-id="${b.id}">Join Session</button>` : ""}${["pending","accepted","scheduled"].includes(b.status) ? `<button class="session-action cancel-booking" data-id="${b.id}">Cancel</button>` : ""}</div></article>`).join("");
+                filterSessions(document.querySelector(".session-tab.active")?.dataset.status || "upcoming");
+                const upcoming = meaningful.filter(b => ["pending","accepted","scheduled"].includes(b.status)).length;
+                const completed = meaningful.filter(b => b.status === "completed").length;
+                document.getElementById("upcomingCount")?.replaceChildren(String(upcoming));
+                document.getElementById("completedCount")?.replaceChildren(String(completed));
+            }
+            const requests = bookings.filter(b => b.provider_id === window.L2UserId && b.status === "pending");
+            const upcoming = bookings.filter(b => b.provider_id === window.L2UserId && ["accepted","scheduled"].includes(b.status));
+            const requestList = document.getElementById("mentorRequestList");
+            const upcomingList = document.getElementById("mentorUpcomingList");
+            if (requestList) requestList.innerHTML = requests.length ? requests.map(b => `<article class="mentor-request-card"><div class="mentor-request-details"><h3>${escapeHtml(b.student)} · ${escapeHtml(b.topic)}</h3><p>${escapeHtml(b.formatted)}</p><span>${escapeHtml(b.notes || "No note provided")}</span></div><div class="mentor-request-actions"><button class="session-action booking-action" data-id="${b.id}" data-action="accept">Accept</button><button class="session-action cancel-session-action booking-action" data-id="${b.id}" data-action="reject">Decline</button></div></article>`).join("") : '<p class="sessions-empty">No pending booking requests.</p>';
+            if (upcomingList) upcomingList.innerHTML = upcoming.length ? upcoming.map(b => `<article class="mentor-upcoming-item"><div><strong>${escapeHtml(b.student)} · ${escapeHtml(b.topic)}</strong><span>${escapeHtml(b.formatted)}</span></div><button class="session-action join-session" data-id="${b.id}">Join Session</button></article>`).join("") : '<p class="sessions-empty">No confirmed sessions scheduled.</p>';
+            document.getElementById("mentorPendingCount")?.replaceChildren(String(requests.length));
+            document.getElementById("mentorUpcomingCount")?.replaceChildren(String(upcoming.length));
+            document.getElementById("mentorRequestCount")?.replaceChildren(`${requests.length} new`);
+        } catch (error) { console.error("Could not load bookings", error); }
+    }
+    document.addEventListener("click", async event => {
+        const action = event.target.closest(".booking-action, .cancel-booking, .join-session");
+        if (!action) return;
+        try {
+            if (action.classList.contains("join-session")) {
+                const data = await fetch(`/api/sessions/${action.dataset.id}/join`).then(r => r.json());
+                if (!data.ok) throw new Error(data.message);
+                window.location.assign(data.url); return;
+            }
+            const token = await fetch("/api/csrf-token").then(r => r.json()).then(d => d.csrf_token);
+            const kind = action.classList.contains("cancel-booking") ? "cancel" : action.dataset.action;
+            const result = await fetch(`/api/bookings/${action.dataset.id}/${kind}`, {method:"POST", headers:{"X-CSRFToken":token}}).then(r => r.json());
+            if (!result.ok) throw new Error(result.message || "Could not update booking.");
+            loadBookings();
+        } catch (error) { window.alert(error.message || "The requested action could not be completed."); }
+    });
+    loadBookings();
+    window.setInterval(loadBookings, 10000);
+
     // Availability button
     document.querySelectorAll(".mentor-availability-btn").forEach(btn => {
-        btn.addEventListener("click", () => alert("Availability calendar management will open here soon."));
+        btn.addEventListener("click", () => { window.location.href = "/schedule#availabilityForm"; });
     });
 })();
