@@ -6,3 +6,4 @@ Flask-WTF>=1.2,<2.0
 email-validator>=2.0,<3.0
 gunicorn>=22.0,<24.0
 psycopg[binary]
+supabase>=2.0,<3.0

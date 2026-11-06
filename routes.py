@@ -4,6 +4,7 @@ import uuid
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal, InvalidOperation
 from functools import wraps
+from io import BytesIO
 from pathlib import Path
 
 from flask import (
@@ -14,7 +15,7 @@ from flask import (
     redirect,
     render_template,
     request,
-    send_from_directory,
+    send_file,
     url_for,
 )
 from flask_login import (
@@ -25,6 +26,7 @@ from flask_login import (
 )
 from flask_wtf.csrf import generate_csrf
 from sqlalchemy.exc import IntegrityError
+from supabase import create_client
 from werkzeug.utils import secure_filename
 
 if __package__:
@@ -55,6 +57,14 @@ FILE_SIGNATURES = {
     "jpg": (b"\xff\xd8\xff",),
     "jpeg": (b"\xff\xd8\xff",),
     "png": (b"\x89PNG\r\n\x1a\n",),
+}
+
+CREDENTIALS_BUCKET = "credentials"
+CREDENTIAL_MIME_TYPES = {
+    "pdf": "application/pdf",
+    "jpg": "image/jpeg",
+    "jpeg": "image/jpeg",
+    "png": "image/png",
 }
 
 
@@ -171,8 +181,23 @@ def error(message, status=400, field=None):
     return jsonify({"ok": False, "message": message, "field": field}), status
 
 
-def credentials_folder(user_id):
-    return Path(current_app.instance_path) / "credentials" / str(user_id)
+def credentials_bucket():
+    supabase_url = os.environ.get("SUPABASE_URL")
+    service_role_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not service_role_key:
+        raise RuntimeError("Supabase Storage credentials are not configured.")
+
+    client = create_client(supabase_url, service_role_key)
+    return client.storage.from_(CREDENTIALS_BUCKET)
+
+
+def cleanup_credential_objects(object_paths):
+    if not object_paths:
+        return
+    try:
+        credentials_bucket().remove(object_paths)
+    except Exception:
+        current_app.logger.exception("Failed to clean up credential objects in Storage")
 
 
 def check_upload(file):
@@ -283,7 +308,7 @@ def register():
                 return error(problem, field="proofs")
             checked_files.append((f, ext))
 
-    saved_paths = []
+    uploaded_object_paths = []
     try:
         active_roles = sorted(roles - VERIFIED_ROLES)
         user = User(display_name=name, email=email)
@@ -294,13 +319,18 @@ def register():
         db.session.flush()
 
         if needs_review:
-            folder = credentials_folder(user.id)
-            folder.mkdir(parents=True, exist_ok=True)
-
+            bucket = credentials_bucket()
             for f, ext in checked_files:
-                stored = f"{uuid.uuid4().hex}.{ext}"
-                f.save(folder / stored)
-                saved_paths.append(folder / stored)
+                stored = f"{user.id}/{uuid.uuid4().hex}.{ext}"
+                bucket.upload(
+                    path=stored,
+                    file=f.read(),
+                    file_options={
+                        "content-type": CREDENTIAL_MIME_TYPES[ext],
+                        "upsert": "false",
+                    },
+                )
+                uploaded_object_paths.append(stored)
                 db.session.add(Credential(
                     user_id=user.id,
                     original_name=secure_filename(f.filename)[:255],
@@ -320,14 +350,12 @@ def register():
 
     except IntegrityError:
         db.session.rollback()
-        for path in saved_paths:
-            path.unlink(missing_ok=True)
+        cleanup_credential_objects(uploaded_object_paths)
         return error("That email is already registered. Try logging in instead.", 409, field="email")
 
     except Exception:
         db.session.rollback()
-        for path in saved_paths:
-            path.unlink(missing_ok=True)
+        cleanup_credential_objects(uploaded_object_paths)
         current_app.logger.exception("Registration failed")
         return error("We couldn't create your account. Please try again.", 500)
 
@@ -484,11 +512,23 @@ def download_credential(credential_id):
     cred = db.session.get(Credential, credential_id)
     if not cred:
         return error("File not found.", 404)
-    return send_from_directory(
-        credentials_folder(cred.user_id),
-        cred.stored_name,
-        download_name=cred.original_name,
-    )
+    try:
+        file_bytes = credentials_bucket().download(cred.stored_name)
+        extension = (
+            cred.original_name.rsplit(".", 1)[-1].lower()
+            if "." in cred.original_name
+            else ""
+        )
+        mimetype = CREDENTIAL_MIME_TYPES.get(extension, "application/octet-stream")
+        return send_file(
+            BytesIO(file_bytes),
+            mimetype=mimetype,
+            as_attachment=True,
+            download_name=cred.original_name,
+        )
+    except Exception:
+        current_app.logger.exception("Credential download from Storage failed")
+        return error("Unable to retrieve the credential file.", 500)
 
 
 # ---------- Profile Management APIs (Requirements 2 & 3) ----------
