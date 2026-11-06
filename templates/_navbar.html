@@ -13,6 +13,7 @@
     <a href="{{ url_for('main.admin_reports_page') }}" {% if active_page == 'reports' %}class="active"{% endif %}>Reports</a>
     <a href="{{ url_for('main.admin_users') }}"      {% if active_page == 'users' %}class="active"{% endif %}>Users</a>
     <a href="{{ url_for('main.admin_settings') }}"   {% if active_page == 'admin_settings' %}class="active"{% endif %}>Settings</a>
+    <button type="button" class="tb-nav-logout" id="logoutBtn">Log out</button>
   </nav>
 
   {% else %}
@@ -81,7 +82,9 @@
         {% endif %}
 
         <div class="dd-sep"></div>
-        <button type="button" class="dd-item danger" id="logoutBtn" role="menuitem">Log out</button>
+        {% if not current_user.is_admin %}
+          <button type="button" class="dd-item danger" id="logoutBtn" role="menuitem">Log out</button>
+        {% endif %}
       </div>
     </div>
   </div>

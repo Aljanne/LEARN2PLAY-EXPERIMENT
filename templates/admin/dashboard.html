@@ -136,21 +136,6 @@
         });
       });
 
-    // Dropdown toggle
-    document.getElementById('userAvatar').addEventListener('click', function() {
-      document.getElementById('profileDropdown').classList.toggle('hidden');
-    });
-    document.addEventListener('click', function(e) {
-      if (!document.getElementById('profileMenu').contains(e.target))
-        document.getElementById('profileDropdown').classList.add('hidden');
-    });
-
-    // Logout
-    document.getElementById('logoutBtn').addEventListener('click', function() {
-      fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin',
-        headers: { 'X-CSRFToken': document.cookie.match(/csrf_token=([^;]+)/)?.[1] || '' }
-      }).then(() => location.href = '/auth');
-    });
   </script>
 </body>
 </html>

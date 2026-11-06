@@ -107,7 +107,11 @@ def admin_required(view):
     def wrapped(*args, **kwargs):
         if not current_user.is_admin:
             return error("Administrator access required.", 403)
-        return view(*args, **kwargs)
+        response = current_app.make_response(view(*args, **kwargs))
+        response.headers["Cache-Control"] = "no-store, private"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        return response
     return wrapped
 
 

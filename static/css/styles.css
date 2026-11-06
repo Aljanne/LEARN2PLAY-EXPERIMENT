@@ -4539,3 +4539,5 @@ html {
 .availability-form input, .availability-form select { border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--txt); padding: 9px; }
 .availability-row button { border: 1px solid var(--line); border-radius: 7px; color: var(--danger); background: transparent; padding: 7px 10px; cursor: pointer; }
 @media (max-width: 600px) { .activity-row { align-items: flex-start; flex-direction: column; gap: 5px; } .booking-modal { padding: 22px 18px; } }
+.tb-nav-logout { border: 0; background: transparent; color: var(--txt2); font: inherit; cursor: pointer; padding: 8px 10px; border-radius: 8px; }
+.tb-nav-logout:hover, .tb-nav-logout:focus-visible { color: var(--danger); background: rgba(248, 113, 113, .1); outline: none; }
