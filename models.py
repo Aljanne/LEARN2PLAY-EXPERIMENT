@@ -32,10 +32,14 @@ class User(UserMixin, db.Model):
     # Profile information
     bio = db.Column(db.Text, nullable=True)
     profile_picture = db.Column(db.String(255), nullable=True)
-    topics_json = db.Column(db.Text, nullable=True, default='[]')
+    topics_json = db.Column(
+        db.Text, nullable=True, default='[]', server_default='[]'
+    )
 
     # Legacy rate column retained for backward compatibility
-    hourly_rate = db.Column(db.Integer, nullable=True, default=300)
+    hourly_rate = db.Column(
+        db.Integer, nullable=True, default=300, server_default=db.text("300")
+    )
 
     # Independent decimal hourly rates for providers
     teaching_rate = db.Column(db.Numeric(10, 2), nullable=True)
