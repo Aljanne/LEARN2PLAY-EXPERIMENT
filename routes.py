@@ -2,7 +2,7 @@ import os
 import re
 import secrets
 import uuid
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from functools import wraps
 from io import BytesIO
@@ -26,6 +26,7 @@ from flask_login import (
     logout_user,
 )
 from flask_wtf.csrf import generate_csrf
+import jwt
 from sqlalchemy.exc import IntegrityError
 from supabase import create_client
 from werkzeug.utils import secure_filename
@@ -52,6 +53,60 @@ LINK_RE = re.compile(r"^https?://\S+\.\S+$", re.I)
 MAX_FILES = 5
 MAX_FILE_BYTES = 5 * 1024 * 1024
 MAX_LINKS = 5
+
+
+class JaasConfigurationError(Exception):
+    """Raised when server-side JaaS credentials are missing or unusable."""
+
+
+def create_jaas_participant_token(appointment, participant):
+    """Create a short-lived token scoped to one participant and one booking room."""
+    app_id = current_app.config.get("JAAS_APP_ID", "").strip()
+    configured_key_id = current_app.config.get("JAAS_API_KEY_ID", "").strip()
+    private_key = current_app.config.get("JAAS_PRIVATE_KEY", "")
+    if not app_id or not configured_key_id or not private_key:
+        raise JaasConfigurationError
+
+    # JaaS kid is AppID/key-id. Accept either its complete form or the key-id
+    # suffix, but reject a value belonging to a different AppID.
+    key_prefix = f"{app_id}/"
+    if configured_key_id.startswith(key_prefix):
+        kid = configured_key_id
+    elif "/" not in configured_key_id:
+        kid = key_prefix + configured_key_id
+    else:
+        raise JaasConfigurationError
+    if not appointment.meeting_room or not participant.display_name:
+        raise JaasConfigurationError
+
+    now = datetime.now(timezone.utc)
+    is_provider = participant.id == appointment.provider_id
+    claims = {
+        "aud": "jitsi",
+        "iss": "chat",
+        "sub": app_id,
+        "room": appointment.meeting_room,
+        "nbf": int(now.timestamp()) - 10,
+        "exp": int(now.timestamp()) + 300,
+        "context": {
+            "user": {
+                "id": str(participant.id),
+                "name": participant.display_name,
+                "moderator": "true" if is_provider else "false",
+            },
+            "room": {"regex": False},
+        },
+    }
+    try:
+        return jwt.encode(
+            claims,
+            private_key,
+            algorithm="RS256",
+            headers={"kid": kid, "typ": "JWT"},
+        )
+    except Exception:
+        # Avoid propagating crypto-library details, which can include key data.
+        raise JaasConfigurationError from None
 
 FILE_SIGNATURES = {
     "pdf": (b"%PDF-",),
@@ -1025,7 +1080,27 @@ def join_session(booking_id):
         return error("Session not found.", 404)
     if appt.status not in ("accepted", "scheduled") or not appt.meeting_room:
         return error("The mentor has not confirmed this session.", 403)
-    return jsonify({"ok": True, "url": "https://meet.jit.si/" + appt.meeting_room})
+    return jsonify({"ok": True, "url": url_for("main.meeting_page", booking_id=appt.id)})
+
+
+@main.route("/sessions/<int:booking_id>/meeting", methods=["GET"])
+@login_required
+def meeting_page(booking_id):
+    appt = db.session.get(Appointment, booking_id)
+    if not appt or (appt.student_id != current_user.id and appt.provider_id != current_user.id):
+        return error("Session not found.", 404)
+    if appt.status not in ("accepted", "scheduled") or not appt.meeting_room:
+        return error("The mentor has not confirmed this session.", 403)
+    try:
+        participant_token = create_jaas_participant_token(appt, current_user)
+    except JaasConfigurationError:
+        return error("Video meetings are temporarily unavailable. Please contact support.", 503)
+    return render_template(
+        "meeting.html",
+        jaas_app_id=current_app.config["JAAS_APP_ID"],
+        meeting_room=appt.meeting_room,
+        participant_token=participant_token,
+    )
 
 
 # ---------- Frontend View Routes ----------

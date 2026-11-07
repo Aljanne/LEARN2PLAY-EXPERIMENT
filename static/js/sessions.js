@@ -138,6 +138,8 @@
     document.addEventListener("click", async event => {
         const action = event.target.closest(".booking-action, .cancel-booking, .join-session");
         if (!action) return;
+        action.disabled = true;
+        action.setAttribute("aria-busy", "true");
         try {
             if (action.classList.contains("join-session")) {
                 const data = await fetch(`/api/sessions/${action.dataset.id}/join`).then(r => r.json());
@@ -150,6 +152,10 @@
             if (!result.ok) throw new Error(result.message || "Could not update booking.");
             loadBookings();
         } catch (error) { window.alert(error.message || "The requested action could not be completed."); }
+        finally {
+            action.disabled = false;
+            action.removeAttribute("aria-busy");
+        }
     });
     loadBookings();
     window.setInterval(loadBookings, 10000);

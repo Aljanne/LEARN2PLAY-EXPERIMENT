@@ -15,6 +15,13 @@ class Config:
         raise RuntimeError("Production requires a SECRET_KEY of at least 32 characters.")
     SECRET_KEY = secret_key or secrets.token_urlsafe(32)
 
+    # JaaS credentials are server-only. Normalize escaped PEM newlines because
+    # Vercel environment variables may provide the key as a single line.
+    JAAS_APP_ID = os.environ.get("JAAS_APP_ID", "").strip()
+    JAAS_API_KEY_ID = os.environ.get("JAAS_API_KEY_ID", "").strip()
+    jaas_private_key = os.environ.get("JAAS_PRIVATE_KEY", "").strip()
+    JAAS_PRIVATE_KEY = jaas_private_key.replace("\\n", "\n") if jaas_private_key else ""
+
     # Database
     database_url = os.environ.get("DATABASE_URL")
     if database_url:

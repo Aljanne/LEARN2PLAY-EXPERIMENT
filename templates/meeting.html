@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Video Session | Learn2Play</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="https://8x8.vc/{{ jaas_app_id|e }}/external_api.js" defer></script>
+    <style>
+        html, body { width: 100%; min-height: 100%; margin: 0; }
+        body { background: #10151e; color: #f4f6fb; }
+        .meeting-page { min-height: 100vh; display: flex; flex-direction: column; }
+        .meeting-topbar { min-height: 62px; padding: 10px 20px; display: flex; align-items: center;
+            justify-content: space-between; gap: 16px; background: #171f2b; box-sizing: border-box; }
+        .meeting-brand { font-weight: 700; letter-spacing: .02em; }
+        .meeting-leave { color: #fff; text-decoration: none; border-radius: 8px; padding: 10px 15px;
+            background: #344155; font-weight: 600; }
+        .meeting-leave:hover, .meeting-leave:focus-visible { background: #45566f; }
+        .meeting-frame { flex: 1; min-height: 360px; height: calc(100vh - 62px); }
+        @media (max-width: 600px) {
+            .meeting-topbar { min-height: 56px; padding: 8px 12px; }
+            .meeting-frame { height: calc(100vh - 56px); min-height: 300px; }
+        }
+    </style>
+</head>
+<body>
+    <main class="meeting-page">
+        <header class="meeting-topbar">
+            <span class="meeting-brand">Learn2Play · Video Session</span>
+            <a class="meeting-leave" href="{{ url_for('main.sessions') }}" id="leaveMeeting">Leave meeting</a>
+        </header>
+        <div class="meeting-frame" id="jaas-meeting" aria-label="Video meeting"></div>
+    </main>
+    <script>
+        const jaasAppId = {{ jaas_app_id|tojson }};
+        const meetingRoom = {{ meeting_room|tojson }};
+        const participantToken = {{ participant_token|tojson }};
+        let meetingApi;
+
+        window.addEventListener("load", () => {
+            if (!window.JitsiMeetExternalAPI) {
+                document.getElementById("jaas-meeting").textContent =
+                    "The video meeting could not be loaded. Return to My Sessions and try again.";
+                return;
+            }
+            meetingApi = new JitsiMeetExternalAPI("8x8.vc", {
+                roomName: `${jaasAppId}/${meetingRoom}`,
+                jwt: participantToken,
+                parentNode: document.getElementById("jaas-meeting"),
+                width: "100%",
+                height: "100%"
+            });
+        });
+
+        document.getElementById("leaveMeeting").addEventListener("click", () => {
+            if (meetingApi) meetingApi.executeCommand("hangup");
+        });
+    </script>
+</body>
+</html>
