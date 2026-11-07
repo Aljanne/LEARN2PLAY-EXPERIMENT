@@ -82,21 +82,27 @@ def create_jaas_participant_token(appointment, participant):
     now = datetime.now(timezone.utc)
     is_provider = participant.id == appointment.provider_id
     claims = {
-        "aud": "jitsi",
-        "iss": "chat",
-        "sub": app_id,
-        "room": appointment.meeting_room,
-        "nbf": int(now.timestamp()) - 10,
-        "exp": int(now.timestamp()) + 300,
-        "context": {
-            "user": {
-                "id": str(participant.id),
-                "name": participant.display_name,
-                "moderator": "true" if is_provider else "false",
-            },
-            "room": {"regex": False},
+    "aud": "jitsi",
+    "iss": "chat",
+    "sub": app_id,
+    "room": appointment.meeting_room,
+    "nbf": int(now.timestamp()) - 10,
+    "exp": int(now.timestamp()) + 3600,
+    "context": {
+        "user": {
+            "id": str(participant.id),
+            "name": participant.display_name,
+            "moderator": "true" if is_provider else "false",
         },
-    }
+        "features": {
+            "recording": "false",
+            "livestreaming": "false",
+            "transcription": "false",
+            "outbound-call": "false",
+        },
+        "room": {"regex": False},
+    },
+}
     try:
         return jwt.encode(
             claims,
