@@ -60,67 +60,45 @@
             gap: 12px;
         }
 
-        /* Integrated navbar */
+        /* Dashboard-style navbar */
 
-        .meeting-header {
+        .topbar {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 20px;
-            min-height: 60px;
-            padding: 8px 24px;
+            padding: 14px 24px;
             margin: 0 -24px;
-            border-bottom: 1px solid var(--border);
-            background: rgba(255,255,255,.02);
+            background: var(--bg);
+            border-bottom: 1px solid var(--line, var(--border));
+            position: relative;
+            top: 0;
+            z-index: 20;
+            flex-shrink: 0;
+            width: calc(100% + 48px);
         }
 
-        .brand {
+        .tb-brand {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
+            text-decoration: none;
+            flex-shrink: 0;
         }
 
-        .brand-icon {
-            width: 42px;
-            height: 42px;
-            display: grid;
-            place-items: center;
-            border-radius: 13px;
-            background: linear-gradient(135deg, #8b5cf6, #6035c9);
-            box-shadow: 0 5px 22px rgba(139,92,246,.25);
-            font-size: 21px;
-            font-weight: 800;
-        }
-
-        .brand-name {
-            font-size: 17px;
-            font-weight: 750;
-            letter-spacing: -.4px;
-        }
-
-        .brand-subtitle {
-            color: var(--muted);
-            font-size: 12px;
-            margin-top: 3px;
-        }
-
-        .header-right {
+        .meeting-header-right {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 20px;
         }
 
         .session-status {
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 9px 13px;
-            border: 1px solid var(--border);
-            background: rgba(255,255,255,.035);
-            border-radius: 30px;
-            color: #d6c9ff;
-            font-size: 12px;
-            font-weight: 600;
+            color: var(--txt2, var(--muted));
+            font-size: 14px;
+            white-space: nowrap;
         }
 
         .status-dot {
@@ -129,23 +107,25 @@
             border-radius: 50%;
             background: #a78bfa;
             box-shadow: 0 0 10px rgba(167,139,250,.7);
+            flex-shrink: 0;
         }
 
         .leave-button {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 9px;
-            padding: 11px 17px;
+            gap: 8px;
+            padding: 9px 14px;
             border-radius: 10px;
             background: rgba(239,68,68,.12);
             border: 1px solid rgba(239,68,68,.2);
             color: #fca5a5;
             text-decoration: none;
             font-size: 13px;
-            font-weight: 650;
+            font-weight: 600;
             transition: .2s ease;
             cursor: pointer;
+            white-space: nowrap;
         }
 
         .leave-button:hover {
@@ -229,72 +209,42 @@
             line-height: 1.6;
         }
 
-        /* Footer */
-
-        .meeting-footer {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            color: #77718f;
-            font-size: 11px;
-            min-height: 20px;
-        }
-
-        .footer-brand {
-            color: #aaa0c7;
-            font-weight: 700;
-        }
-
         /* Mobile layout */
 
         @media (max-width: 650px) {
             .meeting-page {
-                padding: 0 12px 12px;
+                padding: 0 12px 10px;
                 gap: 10px;
             }
 
-            .meeting-header {
-                min-height: 56px;
-                padding: 8px 12px;
+            .topbar {
+                padding: 12px;
                 margin: 0 -12px;
+                width: calc(100% + 24px);
+                gap: 10px;
             }
 
-            .brand {
-                gap: 9px;
-            }
-
-            .brand-icon {
-                width: 36px;
-                height: 36px;
-                border-radius: 10px;
-                font-size: 18px;
-            }
-
-            .brand-name {
-                font-size: 14px;
-            }
-
-            .brand-subtitle {
-                font-size: 10px;
+            .meeting-header-right {
+                gap: 12px;
             }
 
             .session-status {
-                display: none;
+                font-size: 11px;
             }
 
             .leave-button {
-                padding: 9px 11px;
+                padding: 8px 11px;
                 font-size: 11px;
-                gap: 6px;
             }
 
             .meeting-content {
                 border-radius: 12px;
             }
+        }
 
-            .meeting-footer {
-                font-size: 9px;
+        @media (max-width: 380px) {
+            .session-status {
+                display: none;
             }
         }
     </style>
@@ -303,21 +253,16 @@
 <body>
     <main class="meeting-page">
 
-        <!-- Integrated Learn2Play navbar -->
-        <header class="meeting-header">
+        <!-- Simplified dashboard-style navbar -->
 
-            <div class="brand">
-                <div class="brand-icon">L</div>
+        <header class="topbar">
 
-                <div>
-                    <div class="brand-name">Learn2Play</div>
-                    <div class="brand-subtitle">
-                        Learn together. Play better.
-                    </div>
-                </div>
-            </div>
+            <a class="tb-brand" href="{{ url_for('main.dashboard') }}">
+                <div class="logo">L2</div>
+                <span class="brand-name">Learn2Play</span>
+            </a>
 
-            <div class="header-right">
+            <div class="meeting-header-right">
 
                 <div class="session-status">
                     <span class="status-dot"></span>
@@ -327,14 +272,15 @@
                 <a href="{{ url_for('main.sessions') }}"
                    class="leave-button"
                    id="leaveMeeting">
-                    <span>↗</span>
                     Leave session
                 </a>
 
             </div>
+
         </header>
 
         <!-- Video conference -->
+
         <section class="meeting-content" aria-label="Video meeting">
 
             <div id="jaas-meeting"></div>
@@ -354,12 +300,6 @@
             </div>
 
         </section>
-
-        <!-- Footer -->
-        <footer class="meeting-footer">
-            <span class="footer-brand">Learn2Play</span>
-            <span>Make every session count.</span>
-        </footer>
 
     </main>
 
@@ -420,7 +360,6 @@
                 // When the local participant successfully joins.
                 meetingApi.addListener("videoConferenceJoined", (event) => {
                     console.log("[Learn2Play] Conference joined:", event);
-
                     hideLoadingScreen();
                 });
 
@@ -437,7 +376,6 @@
                 // When the meeting is ready to close.
                 meetingApi.addListener("readyToClose", () => {
                     console.log("[Learn2Play] Meeting ready to close");
-
                     window.location.href = "{{ url_for('main.sessions') }}";
                 });
 
