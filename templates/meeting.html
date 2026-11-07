@@ -16,8 +16,6 @@
     <style>
         :root {
             --bg: #0d0b1c;
-            --surface: #15122a;
-            --surface-light: #201b3c;
             --purple: #8b5cf6;
             --purple-light: #a78bfa;
             --text: #f5f3ff;
@@ -37,34 +35,43 @@
 
         body {
             background:
-                radial-gradient(ellipse at top left, rgba(111, 66, 193, .16), transparent 40%),
+                radial-gradient(
+                    ellipse at top left,
+                    rgba(111, 66, 193, .16),
+                    transparent 40%
+                ),
                 var(--bg);
             color: var(--text);
             font-family: Inter, "Segoe UI", Arial, sans-serif;
             overflow: hidden;
         }
 
+        /* Main page layout */
+
         .meeting-page {
-            /* Fill the whole viewport: cancel any max-width/margin
-               coming from the global styles.css */
             width: 100%;
             max-width: none;
-            margin: 0;
+            height: 100vh;
             height: 100dvh;
+            margin: 0;
+            padding: 0 24px 14px;
             display: flex;
             flex-direction: column;
-            padding: 18px 24px 22px;
-            gap: 18px;
+            gap: 12px;
         }
 
-        /* Header */
+        /* Integrated navbar */
 
         .meeting-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 20px;
-            min-height: 54px;
+            min-height: 60px;
+            padding: 8px 24px;
+            margin: 0 -24px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(255,255,255,.02);
         }
 
         .brand {
@@ -138,6 +145,7 @@
             font-size: 13px;
             font-weight: 650;
             transition: .2s ease;
+            cursor: pointer;
         }
 
         .leave-button:hover {
@@ -145,54 +153,13 @@
             transform: translateY(-1px);
         }
 
-        /* Meeting heading */
-
-        .meeting-heading {
-            display: flex;
-            align-items: flex-end;
-            justify-content: space-between;
-            gap: 15px;
-        }
-
-        .heading-label {
-            color: var(--purple-light);
-            text-transform: uppercase;
-            letter-spacing: 1.8px;
-            font-size: 10px;
-            font-weight: 800;
-            margin-bottom: 7px;
-        }
-
-        .meeting-heading h1 {
-            margin: 0;
-            font-size: clamp(21px, 3vw, 28px);
-            letter-spacing: -.8px;
-            font-weight: 750;
-        }
-
-        .meeting-heading p {
-            margin: 7px 0 0;
-            color: var(--muted);
-            font-size: 13px;
-        }
-
-        .meeting-tag {
-            color: #c4b5fd;
-            background: rgba(139,92,246,.12);
-            border: 1px solid rgba(139,92,246,.2);
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 11px;
-            font-weight: 700;
-            white-space: nowrap;
-        }
-
-        /* Video area */
+        /* Video conference area */
 
         .meeting-content {
             position: relative;
             flex: 1;
             min-height: 0;
+            width: 100%;
             background: #090817;
             border: 1px solid rgba(167,139,250,.17);
             border-radius: 17px;
@@ -212,6 +179,8 @@
             height: 100% !important;
             border: 0;
         }
+
+        /* Loading overlay */
 
         .meeting-loading {
             position: absolute;
@@ -237,7 +206,9 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         .loading-title {
@@ -267,6 +238,7 @@
             gap: 12px;
             color: #77718f;
             font-size: 11px;
+            min-height: 20px;
         }
 
         .footer-brand {
@@ -274,15 +246,29 @@
             font-weight: 700;
         }
 
+        /* Mobile layout */
+
         @media (max-width: 650px) {
             .meeting-page {
-                padding: 12px;
-                gap: 13px;
+                padding: 0 12px 12px;
+                gap: 10px;
+            }
+
+            .meeting-header {
+                min-height: 56px;
+                padding: 8px 12px;
+                margin: 0 -12px;
+            }
+
+            .brand {
+                gap: 9px;
             }
 
             .brand-icon {
                 width: 36px;
                 height: 36px;
+                border-radius: 10px;
+                font-size: 18px;
             }
 
             .brand-name {
@@ -300,19 +286,7 @@
             .leave-button {
                 padding: 9px 11px;
                 font-size: 11px;
-            }
-
-            .meeting-heading {
-                align-items: flex-start;
-            }
-
-            .meeting-heading p {
-                font-size: 11px;
-            }
-
-            .meeting-tag {
-                font-size: 9px;
-                padding: 7px 9px;
+                gap: 6px;
             }
 
             .meeting-content {
@@ -324,24 +298,27 @@
             }
         }
     </style>
-<base target="_blank">
 </head>
 
 <body>
     <main class="meeting-page">
 
-        <!-- Header -->
+        <!-- Integrated Learn2Play navbar -->
         <header class="meeting-header">
+
             <div class="brand">
                 <div class="brand-icon">L</div>
 
                 <div>
                     <div class="brand-name">Learn2Play</div>
-                    <div class="brand-subtitle">Learn together. Play better.</div>
+                    <div class="brand-subtitle">
+                        Learn together. Play better.
+                    </div>
                 </div>
             </div>
 
             <div class="header-right">
+
                 <div class="session-status">
                     <span class="status-dot"></span>
                     Video session
@@ -353,19 +330,9 @@
                     <span>↗</span>
                     Leave session
                 </a>
+
             </div>
         </header>
-
-        <!-- Meeting information -->
-        <section class="meeting-heading">
-            <div>
-                <div class="heading-label">Live learning space</div>
-                <h1>Your session starts here.</h1>
-                <p>Connect with your mentor or student and make the most of your time together.</p>
-            </div>
-
-            <div class="meeting-tag">PRIVATE SESSION</div>
-        </section>
 
         <!-- Video conference -->
         <section class="meeting-content" aria-label="Video meeting">
@@ -373,6 +340,7 @@
             <div id="jaas-meeting"></div>
 
             <div class="meeting-loading" id="meetingLoading">
+
                 <div class="loading-spinner" id="loadingSpinner"></div>
 
                 <div class="loading-title" id="loadingTitle">
@@ -382,6 +350,7 @@
                 <div class="loading-description" id="loadingDescription">
                     Please wait while we connect you to your Learn2Play session.
                 </div>
+
             </div>
 
         </section>
@@ -394,112 +363,113 @@
 
     </main>
 
-    
-<script>
-    const jaasAppId = {{ jaas_app_id|tojson }};
-    const meetingRoom = {{ meeting_room|tojson }};
-    const participantToken = {{ participant_token|tojson }};
+    <script>
+        const jaasAppId = {{ jaas_app_id|tojson }};
+        const meetingRoom = {{ meeting_room|tojson }};
+        const participantToken = {{ participant_token|tojson }};
 
-    const meetingContainer = document.getElementById("jaas-meeting");
-    const loadingScreen = document.getElementById("meetingLoading");
-    const loadingTitle = document.getElementById("loadingTitle");
-    const loadingDescription = document.getElementById("loadingDescription");
-    const loadingSpinner = document.getElementById("loadingSpinner");
+        const meetingContainer = document.getElementById("jaas-meeting");
+        const loadingScreen = document.getElementById("meetingLoading");
+        const loadingTitle = document.getElementById("loadingTitle");
+        const loadingDescription = document.getElementById("loadingDescription");
+        const loadingSpinner = document.getElementById("loadingSpinner");
 
-    let meetingApi = null;
+        let meetingApi = null;
 
-    function showMeetingError(message) {
-        loadingSpinner.style.display = "none";
-        loadingTitle.textContent = "Unable to load meeting";
-        loadingDescription.textContent = message;
-        loadingDescription.classList.add("meeting-error");
-        loadingScreen.style.display = "flex";
-    }
-
-    function hideLoadingScreen() {
-        loadingScreen.style.display = "none";
-    }
-
-    window.addEventListener("load", () => {
-
-        if (!window.JitsiMeetExternalAPI) {
-            showMeetingError(
-                "The video service could not be loaded. Please refresh the page or try again later."
-            );
-            return;
+        function showMeetingError(message) {
+            loadingSpinner.style.display = "none";
+            loadingTitle.textContent = "Unable to load meeting";
+            loadingDescription.textContent = message;
+            loadingDescription.classList.add("meeting-error");
+            loadingScreen.style.display = "flex";
         }
 
-        try {
-            meetingApi = new JitsiMeetExternalAPI("8x8.vc", {
-                roomName: `${jaasAppId}/${meetingRoom}`,
-                jwt: participantToken,
-                parentNode: meetingContainer,
-                width: "100%",
-                height: "100%",
+        function hideLoadingScreen() {
+            loadingScreen.style.display = "none";
+        }
 
-                configOverwrite: {
-                    prejoinConfig: {
-                        enabled: true
+        window.addEventListener("load", () => {
+
+            if (!window.JitsiMeetExternalAPI) {
+                showMeetingError(
+                    "The video service could not be loaded. Please refresh the page or try again later."
+                );
+                return;
+            }
+
+            try {
+                meetingApi = new JitsiMeetExternalAPI("8x8.vc", {
+                    roomName: `${jaasAppId}/${meetingRoom}`,
+                    jwt: participantToken,
+                    parentNode: meetingContainer,
+                    width: "100%",
+                    height: "100%",
+
+                    configOverwrite: {
+                        prejoinConfig: {
+                            enabled: true
+                        }
+                    }
+                });
+
+                // Allow users to see and interact with Jitsi's pre-join screen.
+                hideLoadingScreen();
+
+                console.log("[Learn2Play] JaaS API initialized");
+
+                // When the local participant successfully joins.
+                meetingApi.addListener("videoConferenceJoined", (event) => {
+                    console.log("[Learn2Play] Conference joined:", event);
+
+                    hideLoadingScreen();
+                });
+
+                // Detect JaaS errors.
+                meetingApi.addListener("errorOccurred", (event) => {
+                    console.error("[Learn2Play] JaaS error:", event);
+                });
+
+                // When another participant joins.
+                meetingApi.addListener("participantJoined", (event) => {
+                    console.log("[Learn2Play] Participant joined:", event);
+                });
+
+                // When the meeting is ready to close.
+                meetingApi.addListener("readyToClose", () => {
+                    console.log("[Learn2Play] Meeting ready to close");
+
+                    window.location.href = "{{ url_for('main.sessions') }}";
+                });
+
+            } catch (error) {
+                console.error(
+                    "[Learn2Play] Meeting initialization failed:",
+                    error
+                );
+
+                showMeetingError(
+                    "Something went wrong while starting your meeting. Please return to My Sessions and try again."
+                );
+            }
+
+            // Leave meeting button.
+            document.getElementById("leaveMeeting").addEventListener(
+                "click",
+                (event) => {
+                    if (meetingApi) {
+                        event.preventDefault();
+
+                        meetingApi.executeCommand("hangup");
+
+                        setTimeout(() => {
+                            window.location.href = "{{ url_for('main.sessions') }}";
+                        }, 300);
                     }
                 }
-            });
-            hideLoadingScreen();
-
-            console.log("[Learn2Play] JaaS API initialized");
-
-            // When the local participant successfully joins
-            meetingApi.addListener("videoConferenceJoined", (event) => {
-                console.log("[Learn2Play] Conference joined:", event);
-
-                const loader = document.getElementById("meeting-loader");
-
-                if (loader) {
-                    loader.style.display = "none";
-                }
-
-                hideLoadingScreen();
-            });
-
-            // Detect JaaS errors
-            meetingApi.addListener("errorOccurred", (event) => {
-                console.error("[Learn2Play] JaaS error:", event);
-            });
-
-            // When a participant joins the meeting
-            meetingApi.addListener("participantJoined", (event) => {
-                console.log("[Learn2Play] Participant joined:", event);
-            });
-
-            // When the meeting is ready to close
-            meetingApi.addListener("readyToClose", () => {
-                console.log("[Learn2Play] Meeting ready to close");
-
-                window.location.href = "{{ url_for('main.sessions') }}";
-            });
-
-        } catch (error) {
-            console.error("[Learn2Play] Meeting initialization failed:", error);
-
-            showMeetingError(
-                "Something went wrong while starting your meeting. Please return to My Sessions and try again."
             );
-        }
 
-        // Leave meeting button
-        document.getElementById("leaveMeeting").addEventListener("click", (event) => {
-            if (meetingApi) {
-                event.preventDefault();
-
-                meetingApi.executeCommand("hangup");
-
-                setTimeout(() => {
-                    window.location.href = "{{ url_for('main.sessions') }}";
-                }, 300);
-            }
         });
+    </script>
 
-    }); // IMPORTANT: Closes the window load event listener
-
-</script>
 </body>
 </html>
