@@ -4541,3 +4541,135 @@ html {
 @media (max-width: 600px) { .activity-row { align-items: flex-start; flex-direction: column; gap: 5px; } .booking-modal { padding: 22px 18px; } }
 .tb-nav-logout { border: 0; background: transparent; color: var(--txt2); font: inherit; cursor: pointer; padding: 8px 10px; border-radius: 8px; }
 .tb-nav-logout:hover, .tb-nav-logout:focus-visible { color: var(--danger); background: rgba(248, 113, 113, .1); outline: none; }
+
+/* ============================================================
+   SESSION CARD REDESIGN — mentee side
+   ============================================================ */
+
+/* Card shell */
+.scheduled-session {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 20px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 20px 22px;
+  margin-bottom: 12px;
+  transition: border-color .18s;
+}
+.scheduled-session:hover { border-color: rgba(124,108,245,.4); }
+
+/* Top row: mentor name + datetime on left, status badge on right */
+.session-info-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.session-who { display: flex; flex-direction: column; gap: 4px; }
+.session-mentor-name {
+  color: var(--txt);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.session-datetime {
+  color: var(--txt2);
+  font-size: 13.5px;
+}
+
+/* Status badge */
+.session-status {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.session-status.status-accepted,
+.session-status.status-scheduled {
+  background: rgba(74, 222, 128, 0.16);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.35);
+}
+.session-status.status-pending {
+  background: rgba(251, 191, 36, 0.14);
+  color: var(--gold);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+}
+.session-status.status-completed {
+  background: rgba(163, 163, 163, 0.12);
+  color: var(--txt3);
+  border: 1px solid rgba(163, 163, 163, 0.25);
+}
+.session-status.status-cancelled {
+  background: rgba(248, 113, 113, 0.12);
+  color: var(--danger);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+}
+
+/* Topic row — below the info */
+.session-topic-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+.session-topic-label {
+  color: var(--txt3);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.session-topic-name {
+  color: var(--lavender);
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+/* Notes */
+.session-notes {
+  color: var(--txt3);
+  font-size: 12.5px;
+  margin-top: 8px;
+  line-height: 18px;
+}
+
+/* Action buttons — bigger */
+.session-actions-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: stretch;
+  min-width: 130px;
+}
+.session-action {
+  padding: 11px 20px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all .18s;
+  text-align: center;
+}
+.session-action.join-session {
+  background: var(--purple);
+  color: #fff;
+}
+.session-action.join-session:hover { background: var(--purple2); }
+.session-action.cancel-booking {
+  background: rgba(248,113,113,.12);
+  color: var(--danger);
+  border: 1px solid rgba(248,113,113,.3);
+}
+.session-action.cancel-booking:hover { background: rgba(248,113,113,.22); }
+.session-action:disabled { opacity: .5; cursor: not-allowed; }

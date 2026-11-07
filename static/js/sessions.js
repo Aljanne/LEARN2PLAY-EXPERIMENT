@@ -117,7 +117,40 @@
             if (sessionList) {
                 const mine = bookings.filter(b => b.student_id === window.L2UserId);
                 const meaningful = mine.filter(b => ["pending", "accepted", "scheduled", "completed", "cancelled", "rejected"].includes(b.status));
-                sessionList.innerHTML = meaningful.map(b => `<article class="scheduled-session" data-status="${["completed","cancelled","rejected"].includes(b.status) ? "completed" : "upcoming"}"><div class="session-details"><div class="session-title-row"><h3>${escapeHtml(b.topic)}</h3><span class="session-status">${escapeHtml(b.status)}</span></div><p>${escapeHtml(b.mentor)} · ${escapeHtml(b.formatted)}</p>${b.notes ? `<p>${escapeHtml(b.notes)}</p>` : ""}</div><div class="session-actions-buttons">${b.status === "accepted" || b.status === "scheduled" ? `<button class="session-action join-session" data-id="${b.id}">Join Session</button>` : ""}${["pending","accepted","scheduled"].includes(b.status) ? `<button class="session-action cancel-booking" data-id="${b.id}">Cancel</button>` : ""}</div></article>`).join("");
+                sessionList.innerHTML = meaningful.map(b => {
+                    const isPast = ["completed","cancelled","rejected"].includes(b.status);
+                    const statusClass =
+                        b.status === "accepted"  ? "status-accepted"  :
+                        b.status === "scheduled" ? "status-scheduled" :
+                        b.status === "pending"   ? "status-pending"   :
+                        b.status === "completed" ? "status-completed" :
+                        "status-cancelled";
+                    const joinBtn   = (b.status === "accepted" || b.status === "scheduled")
+                        ? `<button class="session-action join-session" data-id="${b.id}">Join Session</button>` : "";
+                    const cancelBtn = ["pending","accepted","scheduled"].includes(b.status)
+                        ? `<button class="session-action cancel-booking" data-id="${b.id}">Cancel</button>` : "";
+                    return `
+                        <article class="scheduled-session" data-status="${isPast ? "completed" : "upcoming"}">
+                            <div class="session-details">
+                                <div class="session-info-top">
+                                    <div class="session-who">
+                                        <strong class="session-mentor-name">${escapeHtml(b.mentor)}</strong>
+                                        <span class="session-datetime">${escapeHtml(b.formatted)}</span>
+                                    </div>
+                                    <span class="session-status ${statusClass}">${escapeHtml(b.status)}</span>
+                                </div>
+                                <div class="session-topic-row">
+                                    <span class="session-topic-label">Topic</span>
+                                    <span class="session-topic-name">${escapeHtml(b.topic)}</span>
+                                </div>
+                                ${b.notes ? `<p class="session-notes">${escapeHtml(b.notes)}</p>` : ""}
+                            </div>
+                            <div class="session-actions-buttons">
+                                ${joinBtn}
+                                ${cancelBtn}
+                            </div>
+                        </article>`;
+                }).join("");
                 filterSessions(document.querySelector(".session-tab.active")?.dataset.status || "upcoming");
                 const upcoming = meaningful.filter(b => ["pending","accepted","scheduled"].includes(b.status)).length;
                 const completed = meaningful.filter(b => b.status === "completed").length;
