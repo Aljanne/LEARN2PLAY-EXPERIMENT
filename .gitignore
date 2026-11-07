@@ -10,3 +10,6 @@ __pycache__/
 *.sqlite3
 learn2play.db
 instance/credentials/
+.vercel
+.env*
+!.env.example
