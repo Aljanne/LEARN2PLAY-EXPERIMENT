@@ -160,8 +160,16 @@
     }
     .msg-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
 
+    .msg-content {
+      display: flex;
+      flex-direction: column;
+      max-width: 68%;
+    }
+    .msg-row.mine .msg-content {
+      align-items: flex-end;
+    }
     .msg-bubble {
-      max-width: 68%; padding: 10px 14px; border-radius: 14px;
+      max-width: 100%; padding: 10px 14px; border-radius: 14px;
       font-size: 13.5px; line-height: 20px;
     }
     .msg-row.mine .msg-bubble {
@@ -579,7 +587,7 @@
           ? `<img src="${escHtml(currentThread.other_user.avatar)}" alt="">` : '👤';
         row.innerHTML = `
           ${!isMine ? `<div class="msg-avatar">${avatarSrc}</div>` : ''}
-          <div>
+          <div class="msg-content">
             <div class="msg-bubble">${escHtml(m.body)}</div>
             <div class="msg-time">${fmtFull(m.created_at)}</div>
           </div>
