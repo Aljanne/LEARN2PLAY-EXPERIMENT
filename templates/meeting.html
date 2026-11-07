@@ -422,39 +422,59 @@
             }
 
             try {
-                meetingApi = new JitsiMeetExternalAPI("8x8.vc", {
-                    roomName: `${jaasAppId}/${meetingRoom}`,
-                    jwt: participantToken,
-                    parentNode: meetingContainer,
-                    width: "100%",
-                    height: "100%",
-                    configOverwrite: {
-                        prejoinConfig: {
-                            enabled: true
-                        }
-                    }
-                });
+    meetingApi = new JitsiMeetExternalAPI("8x8.vc", {
+        roomName: `${jaasAppId}/${meetingRoom}`,
+        jwt: participantToken,
+        parentNode: meetingContainer,
+        width: "100%",
+        height: "100%",
 
-                meetingApi.addEventListener("videoConferenceJoined", () => {
-                    hideLoadingScreen();
-                });
-
-                meetingApi.addEventListener("readyToClose", () => {
-                    window.location.href = "{{ url_for('main.sessions') }}";
-                });
-
-                meetingApi.addEventListener("errorOccurred", (event) => {
-                    console.error("JaaS meeting error:", event);
-                });
-
-            } catch (error) {
-                console.error("Meeting initialization failed:", error);
-
-                showMeetingError(
-                    "Something went wrong while starting your meeting. Please return to My Sessions and try again."
-                );
+        configOverwrite: {
+            prejoinConfig: {
+                enabled: true
             }
-        });
+        }
+    });
+
+    console.log("[Learn2Play] JaaS API initialized");
+
+    // When the local participant successfully joins
+    meetingApi.addListener("videoConferenceJoined", (event) => {
+        console.log("[Learn2Play] Conference joined:", event);
+
+        const loader = document.getElementById("meeting-loader");
+
+        if (loader) {
+            loader.style.display = "none";
+        }
+
+        hideLoadingScreen();
+    });
+
+    // Detect JaaS errors
+    meetingApi.addListener("errorOccurred", (event) => {
+        console.error("[Learn2Play] JaaS error:", event);
+    });
+
+    // When a participant joins the meeting
+    meetingApi.addListener("participantJoined", (event) => {
+        console.log("[Learn2Play] Participant joined:", event);
+    });
+
+    // When the meeting is ready to close
+    meetingApi.addListener("readyToClose", () => {
+        console.log("[Learn2Play] Meeting ready to close");
+
+        window.location.href = "{{ url_for('main.sessions') }}";
+    });
+
+} catch (error) {
+    console.error("[Learn2Play] Meeting initialization failed:", error);
+
+    showMeetingError(
+        "Something went wrong while starting your meeting. Please return to My Sessions and try again."
+    );
+}
 
         document.getElementById("leaveMeeting").addEventListener("click", (event) => {
             if (meetingApi) {
