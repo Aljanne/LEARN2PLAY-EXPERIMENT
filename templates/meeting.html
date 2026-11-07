@@ -45,6 +45,11 @@
         }
 
         .meeting-page {
+            /* Fill the whole viewport: cancel any max-width/margin
+               coming from the global styles.css */
+            width: 100%;
+            max-width: none;
+            margin: 0;
             height: 100dvh;
             display: flex;
             flex-direction: column;
@@ -319,6 +324,7 @@
             }
         }
     </style>
+<base target="_blank">
 </head>
 
 <body>
@@ -497,4 +503,3 @@
 </script>
 </body>
 </html>
-
