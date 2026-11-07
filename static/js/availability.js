@@ -1,4 +1,4 @@
-"use strict";
+﻿"use strict";
 (() => {
   const form = document.getElementById("availabilityForm");
   if (!form) return;
@@ -16,7 +16,7 @@
       if (!data.availability?.length) list.textContent = "No weekly availability yet. Add a window above.";
       (data.availability || []).forEach(row => {
         const item = document.createElement("div"); item.className = "availability-row";
-        const label = document.createElement("span"); label.textContent = `${days[row.weekday]} · ${row.start_time}–${row.end_time}`;
+        const label = document.createElement("span"); label.textContent = `${days[row.weekday]} Â· ${row.start_time}â€“${row.end_time}`;
         const remove = document.createElement("button"); remove.type = "button"; remove.textContent = "Remove";
         remove.addEventListener("click", async () => {
           const token = await csrf();
@@ -40,7 +40,7 @@
         });
         item.append(label, remove); unavailableList.appendChild(item);
       });
-      if (!data.dates?.length) unavailableList.textContent = "No dates marked unavailable.";
+      if (!data.dates?.length) { unavailableList.innerHTML = "<p style=\"color:var(--txt3,#8b8fa8);font-size:13px;margin-top:8px;\">No dates marked unavailable.</p>"; }
     } catch (_) { unavailableList.textContent = "Could not load unavailable dates."; }
   }
   form.addEventListener("submit", async event => {
@@ -65,3 +65,4 @@
   });
   load();
 })();
+
