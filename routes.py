@@ -7,6 +7,7 @@ from decimal import Decimal, InvalidOperation
 from functools import wraps
 from io import BytesIO
 from pathlib import Path
+from urllib.parse import urlencode
 
 from flask import (
     Blueprint,
@@ -299,6 +300,95 @@ def home():
 @main.route("/auth")
 def auth_page():
     return render_template("auth.html")
+
+
+@main.route("/auth/google")
+def google_auth():
+    supabase_url = current_app.config.get("SUPABASE_URL", "").strip()
+    supabase_anon_key = current_app.config.get("SUPABASE_ANON_KEY", "").strip()
+    if not supabase_url or not supabase_anon_key:
+        current_app.logger.error("Google login requires SUPABASE_URL and SUPABASE_ANON_KEY.")
+        return "Google login is not configured.", 503
+
+    params = urlencode({
+        "provider": "google",
+        "redirect_to": url_for("main.auth_page", _external=True),
+        "apikey": supabase_anon_key,
+    })
+    return redirect(f"{supabase_url.rstrip('/')}/auth/v1/authorize?{params}")
+
+
+@main.route("/api/auth/google", methods=["POST"])
+def google_auth_callback():
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return error("Google login returned an invalid response.", 400)
+    access_token = data.get("access_token")
+    if not isinstance(access_token, str) or not access_token or len(access_token) > 8192:
+        return error("Google login returned an invalid access token.", 400)
+
+    supabase_url = current_app.config.get("SUPABASE_URL", "").strip()
+    supabase_anon_key = current_app.config.get("SUPABASE_ANON_KEY", "").strip()
+    if not supabase_url or not supabase_anon_key:
+        current_app.logger.error("Google login requires SUPABASE_URL and SUPABASE_ANON_KEY.")
+        return error("Google login is not configured.", 503)
+
+    try:
+        response = create_client(supabase_url, supabase_anon_key).auth.get_user(access_token)
+        supabase_user = response.user
+    except Exception:
+        current_app.logger.exception("Supabase could not validate the Google login.")
+        return error("Google login could not be verified. Please try again.", 401)
+
+    email = getattr(supabase_user, "email", None)
+    if isinstance(email, str):
+        email = email.strip().lower()
+    else:
+        email = ""
+    if not email or not getattr(supabase_user, "email_confirmed_at", None):
+        return error("Google login requires a verified email address.", 403)
+
+    user = User.query.filter_by(email=email).first()
+    if user is None:
+        metadata = getattr(supabase_user, "user_metadata", None) or {}
+        display_name = ""
+        if isinstance(metadata, dict):
+            display_name = metadata.get("full_name") or metadata.get("name") or ""
+        if not isinstance(display_name, str):
+            display_name = ""
+        display_name = (display_name.strip() or email.split("@", 1)[0])[:80]
+        user = User(display_name=display_name or email, email=email)
+        user.set_password(secrets.token_urlsafe(32))
+        user.roles = ["student"]
+        db.session.add(user)
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            user = User.query.filter_by(email=email).first()
+            if user is None:
+                current_app.logger.exception("Could not save the Google-authenticated user.")
+                return error("We couldn't complete Google login. Please try again.", 500)
+
+    if not user.is_active:
+        return error("This account is inactive.", 403)
+    if not user.roles:
+        pending = RoleApplication.query.filter_by(user_id=user.id, status="pending").first()
+        if pending:
+            return error("Your registration is still pending admin review.", 403)
+        return error("Your teacher/coach application was not approved.", 403)
+
+    login_user(user)
+    redirect_url = (
+        url_for("main.admin_dashboard")
+        if user.is_admin
+        else url_for("main.dashboard")
+    )
+    return jsonify({
+        "ok": True,
+        "redirect": redirect_url,
+        "user": user_data(user),
+    })
 
 
 @main.route("/register")

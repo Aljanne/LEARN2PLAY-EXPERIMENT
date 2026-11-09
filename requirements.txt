@@ -7,4 +7,5 @@ PyJWT[crypto]>=2.10,<3.0
 email-validator>=2.0,<3.0
 gunicorn>=22.0,<24.0
 psycopg[binary]
+# Supabase Auth (including Google OAuth) and Storage.
 supabase>=2.0,<3.0

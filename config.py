@@ -22,6 +22,14 @@ class Config:
     jaas_private_key = os.environ.get("JAAS_PRIVATE_KEY", "").strip()
     JAAS_PRIVATE_KEY = jaas_private_key.replace("\\n", "\n") if jaas_private_key else ""
 
+    # The anon key is public and is used only for the Supabase Auth browser flow.
+    SUPABASE_URL = os.environ.get("SUPABASE_URL", "").strip()
+    SUPABASE_ANON_KEY = (
+        os.environ.get("SUPABASE_ANON_KEY")
+        or os.environ.get("SUPABASE_KEY")
+        or ""
+    ).strip()
+
     # Database
     database_url = os.environ.get("DATABASE_URL")
     if database_url:

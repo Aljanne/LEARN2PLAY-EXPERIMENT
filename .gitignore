@@ -13,3 +13,4 @@ instance/credentials/
 .vercel
 .env*
 !.env.example
+public/static/

@@ -11,6 +11,7 @@
   const btnLabel = $("btnLabel");
   const note = $("note");
   const eyeBtn = $("eyeBtn");
+  const googleLogin = $("googleLogin");
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   // ---------- helpers ----------
@@ -50,6 +51,36 @@
     note.style.color = type === "error" ? "var(--danger)" : "var(--green)";
   }
   const clearNote = () => (note.textContent = "");
+
+  async function completeGoogleLogin(accessToken) {
+    const data = await apiPost("/api/auth/google", { access_token: accessToken });
+    if (data.user) {
+      try {
+        localStorage.setItem("l2_user", JSON.stringify(data.user));
+      } catch (e) {
+        // The Flask session still works if localStorage is unavailable.
+      }
+    }
+    window.location.assign(data.redirect || "/dashboard");
+  }
+
+  const oauthParams = new URLSearchParams(window.location.hash.slice(1));
+  const oauthError = oauthParams.get("error_description") || oauthParams.get("error");
+  const accessToken = oauthParams.get("access_token");
+  if (accessToken || oauthError) {
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    if (oauthError) {
+      showNote(`Google login failed: ${oauthError}`);
+    } else {
+      completeGoogleLogin(accessToken).catch((error) => {
+        showNote(error.message || "Google login could not be completed.");
+      });
+    }
+  }
+
+  googleLogin.addEventListener("click", () => {
+    window.location.assign("/auth/google");
+  });
 
   // ---------- password visibility ----------
   eyeBtn.addEventListener("click", () => {
